@@ -16,6 +16,8 @@ export default function Dashboard() {
     const userData = localStorage.getItem("stinger_user");
     if (userData) {
       setUser(JSON.parse(userData));
+      // Для единообразного UX: авторизованных ведём на главную с картой
+      router.replace("/");
     } else {
       router.push("/login");
     }

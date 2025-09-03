@@ -19,7 +19,7 @@ export default function Login() {
     if (email === "demo@stinger.ru" && password === "demo123") {
       // Сохраняем "авторизацию" в localStorage
       localStorage.setItem("stinger_user", JSON.stringify({ email, name: "Demo User" }));
-      router.push("/dashboard");
+      router.push("/");
     } else {
       alert("Неверный email или пароль!");
     }
