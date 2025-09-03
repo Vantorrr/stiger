@@ -1,5 +1,5 @@
 "use client";
-import Navbar from "@/components/Navbar";
+import AuthenticatedLayout from "@/components/AuthenticatedLayout";
 import { useMemo, useState, useEffect } from "react";
 
 export default function RewardsPage() {
@@ -40,9 +40,8 @@ export default function RewardsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900 text-white">
-      <Navbar />
-      <main className="mx-auto max-w-2xl px-6 py-10 w-full space-y-8">
+    <AuthenticatedLayout>
+      <div className="mx-auto max-w-2xl px-6 py-10 w-full space-y-8 text-white">
         <h1 className="text-2xl font-bold">Бонусы</h1>
         <section className="rounded-2xl p-6 shadow-xl" style={{ background: "linear-gradient(135deg, rgba(124,58,237,.15), rgba(59,130,246,.10))", border: "1px solid rgba(255,255,255,.12)" }}>
           <div className="flex items-center gap-3 text-xl font-bold mb-1">
@@ -73,7 +72,7 @@ export default function RewardsPage() {
             <button onClick={() => addBalance(-100)} className="h-9 px-3 rounded-lg bg-yellow-600 hover:bg-yellow-700">Списать -100 (тест)</button>
           </div>
         </section>
-      </main>
+      </div>
 
       {showQR && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/60" onClick={() => setShowQR(false)}>
@@ -93,7 +92,7 @@ export default function RewardsPage() {
           </div>
         </div>
       )}
-    </div>
+    </AuthenticatedLayout>
   );
 }
 

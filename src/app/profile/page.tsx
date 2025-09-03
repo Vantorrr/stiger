@@ -1,5 +1,5 @@
 "use client";
-import Navbar from "@/components/Navbar";
+import AuthenticatedLayout from "@/components/AuthenticatedLayout";
 import { useEffect, useState } from "react";
 
 export default function ProfilePage() {
@@ -10,9 +10,8 @@ export default function ProfilePage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-slate-900 dark:via-blue-900 dark:to-purple-900">
-      <Navbar />
-      <main className="mx-auto max-w-2xl px-6 py-10 w-full space-y-8">
+    <AuthenticatedLayout>
+      <div className="mx-auto max-w-2xl px-6 py-10 w-full space-y-8">
         <h1 className="text-2xl font-bold">Профиль</h1>
 
         <section className="glass-effect rounded-2xl p-6 shadow-xl space-y-4">
@@ -25,8 +24,8 @@ export default function ProfilePage() {
           <h2 className="font-semibold">Мои аренды</h2>
           <p className="text-sm opacity-70">Пока аренды отсутствуют.</p>
         </section>
-      </main>
-    </div>
+      </div>
+    </AuthenticatedLayout>
   );
 }
 

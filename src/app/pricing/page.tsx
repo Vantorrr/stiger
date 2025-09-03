@@ -1,11 +1,10 @@
 "use client";
-import Navbar from "@/components/Navbar";
+import AuthenticatedLayout from "@/components/AuthenticatedLayout";
 
 export default function PricingPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-slate-900 dark:via-blue-900 dark:to-purple-900">
-      <Navbar />
-      <main className="mx-auto max-w-3xl px-6 py-10 w-full space-y-8">
+    <AuthenticatedLayout>
+      <div className="mx-auto max-w-3xl px-6 py-10 w-full space-y-8">
         <h1 className="text-2xl font-bold">Тарифы</h1>
         <div className="grid md:grid-cols-3 gap-4">
           {[
@@ -20,8 +19,8 @@ export default function PricingPage() {
             </div>
           ))}
         </div>
-      </main>
-    </div>
+      </div>
+    </AuthenticatedLayout>
   );
 }
 

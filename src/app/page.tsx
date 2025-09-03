@@ -78,7 +78,7 @@ export default function Home() {
           <div className="w-full" style={{ height: "calc(100vh - 64px)" }}>
             <iframe
               src="https://www.openstreetmap.org/export/embed.html?bbox=37.59%2C55.74%2C37.64%2C55.77&layer=mapnik&marker=55.751244%2C37.618423"
-              title="Карта зарядов Stinger"
+              title="Карта зарядов Stiger"
               className="w-full h-full border-0 rounded-none"
               loading="lazy"
             />
@@ -126,7 +126,7 @@ export default function Home() {
                   <span className="text-gray-900 dark:text-gray-100">Return Anywhere.</span>
                 </h1>
                 <p className="text-xl text-gray-600 dark:text-gray-300 max-w-lg mx-auto lg:mx-0">
-                  Stinger — революция в прокате power bank. Оплати, забери, верни в любом шкафу города.
+                  Stiger — революция в прокате power bank. Оплати, забери, верни в любом шкафу города.
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-6 justify-center lg:justify-start">

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Navbar from "@/components/Navbar";
+import AuthenticatedLayout from "@/components/AuthenticatedLayout";
 
 export default function ScanPage() {
   const [user, setUser] = useState(null);
@@ -43,9 +43,8 @@ export default function ScanPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-slate-900 dark:via-blue-900 dark:to-purple-900">
-      <Navbar />
-      <main className="flex items-center justify-center px-6 py-20">
+    <AuthenticatedLayout>
+      <div className="flex items-center justify-center px-6 py-20">
         <div className="w-full max-w-md">
           <div className="glass-effect rounded-3xl p-8 shadow-2xl text-center">
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl gradient-bg text-white text-3xl mb-6">
@@ -92,7 +91,7 @@ export default function ScanPage() {
             </div>
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </AuthenticatedLayout>
   );
 }
