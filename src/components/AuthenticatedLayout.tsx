@@ -27,7 +27,7 @@ export default function AuthenticatedLayout({ children }: { children: React.Reac
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-slate-900 dark:via-blue-900 dark:to-purple-900 relative">
+    <div className="min-h-screen bg-gradient-to-br from-white via-slate-50 to-blue-50 dark:from-slate-900 dark:via-blue-900 dark:to-purple-900 relative">
       {/* Гамбургер меню слева */}
       <div className="absolute top-6 left-6 z-30">
         <button onClick={() => setMenuOpen(true)} className="glass-effect rounded-xl p-3 shadow-xl hover:bg-white/20 transition-all duration-300">

@@ -41,7 +41,7 @@ export default function RewardsPage() {
 
   return (
     <AuthenticatedLayout>
-      <div className="mx-auto max-w-2xl px-6 py-10 w-full space-y-8 text-white">
+      <div className="mx-auto max-w-2xl px-6 py-10 w-full space-y-8">
         <h1 className="text-2xl font-bold">Бонусы</h1>
         <section className="rounded-2xl p-6 shadow-xl" style={{ background: "linear-gradient(135deg, rgba(124,58,237,.15), rgba(59,130,246,.10))", border: "1px solid rgba(255,255,255,.12)" }}>
           <div className="flex items-center gap-3 text-xl font-bold mb-1">
