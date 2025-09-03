@@ -43,29 +43,29 @@ export default function RewardsPage() {
     <AuthenticatedLayout>
       <div className="mx-auto max-w-2xl px-6 py-10 w-full space-y-8">
         <h1 className="text-2xl font-bold">Бонусы</h1>
-        <section className="rounded-2xl p-6 shadow-xl" style={{ background: "linear-gradient(135deg, rgba(124,58,237,.15), rgba(59,130,246,.10))", border: "1px solid rgba(255,255,255,.12)" }}>
+        <section className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200">
           <div className="flex items-center gap-3 text-xl font-bold mb-1">
             <span>{balance}</span>
             <span>⭐</span>
           </div>
-          <p className="text-sm text-white/70 mb-6">1 бонус = 1 ₽</p>
+          <p className="text-sm text-gray-600 mb-6">1 бонус = 1 ₽</p>
 
           <h2 className="font-semibold mb-2">Делись бонусами и заряжайся бесплатно</h2>
-          <p className="text-sm text-white/80 mb-4">Отправь промокод другу — он получит 100 бонусов. Когда друг потратит первые 100 ₽, ты получишь 100 бонусов.</p>
+          <p className="text-sm text-gray-700 mb-4">Отправь промокод другу — он получит 100 бонусов. Когда друг потратит первые 100 ₽, ты получишь 100 бонусов.</p>
 
           <div className="mb-4">
-            <div className="flex w-full max-w-md rounded-xl overflow-hidden border border-white/20">
+            <div className="flex w-full max-w-md rounded-xl overflow-hidden border border-gray-300">
               <input
                 value={promo}
                 readOnly
-                className="flex-1 h-11 px-3 bg-white/10 text-white outline-none placeholder-white/60"
+                className="flex-1 h-11 px-3 bg-gray-50 text-gray-900 outline-none"
               />
-              <button className="h-11 px-4 bg-white text-black hover:opacity-90" onClick={copyPromo}>Копировать</button>
+              <button className="h-11 px-4 bg-purple-600 text-white hover:bg-purple-700" onClick={copyPromo}>Копировать</button>
             </div>
           </div>
           <div className="flex gap-3">
             <button onClick={sharePromo} className="h-11 px-5 rounded-xl bg-blue-500 hover:bg-blue-600">Поделиться</button>
-            <button onClick={() => setShowQR(true)} className="h-11 px-5 rounded-xl border border-white/20 hover:bg-white/10">Показать QR</button>
+            <button onClick={() => setShowQR(true)} className="h-11 px-5 rounded-xl border border-gray-300 hover:bg-gray-50 text-gray-700">Показать QR</button>
           </div>
           <div className="mt-4 flex gap-3">
             <button onClick={() => addBalance(100)} className="h-9 px-3 rounded-lg bg-green-600 hover:bg-green-700">Зачислить +100 (тест)</button>
