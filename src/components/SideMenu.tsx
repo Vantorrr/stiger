@@ -34,6 +34,8 @@ export default function SideMenu({ open, onClose, clientNumber }: { open: boolea
         </div>
 
         <nav className="px-2 py-2 text-[15px]">
+          <MenuItem href="/" label="Карта зарядов" icon="🗺️" onClick={onClose} />
+          <MenuItem href="/scan" label="Взять заряд" icon="⚡" onClick={onClose} />
           <MenuItem href="/profile" label="Профиль" svg="/icons/stinger-profile.svg" onClick={onClose} />
           <MenuItem href="/payment" label="Способ оплаты" svg="/icons/stinger-card.svg" onClick={onClose} />
           <MenuItem href="/rewards" label="Бонусы" svg="/icons/stinger-gift.svg" onClick={onClose} />
