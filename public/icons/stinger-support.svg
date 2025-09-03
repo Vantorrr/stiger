@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <defs>
+    <linearGradient id="g5" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#7C3AED"/>
+      <stop offset="100%" stop-color="#3B82F6"/>
+    </linearGradient>
+  </defs>
+  <!-- Headset icon: clearer association with support -->
+  <g fill="none" stroke="url(#g5)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M5 12a7 7 0 0 1 14 0"/>
+    <rect x="3.8" y="11.5" width="3.8" height="5" rx="1.4"/>
+    <rect x="16.4" y="11.5" width="3.8" height="5" rx="1.4"/>
+    <path d="M12 18.5h2.8a2.7 2.7 0 0 0 2.7-2.7"/>
+    <path d="M12 18.5h-1.8a2.7 2.7 0 0 1-2.7-2.7"/>
+    <path d="M12 20.8v-2.3"/>
+  </g>
+  <circle cx="12" cy="20.8" r="0.1" fill="url(#g5)"/>
+</svg>
+
