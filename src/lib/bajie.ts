@@ -48,7 +48,7 @@ export class BajieClient {
 
   async createRentOrder(input: CreateRentOrderRequest) {
     const url = `${this.baseUrl}/rent/order/create`;
-    return httpRequest<any>(url, {
+    return httpRequest<Record<string, unknown>>(url, {
       method: "POST",
       headers: { Authorization: this.authHeader },
       body: input,
@@ -57,7 +57,7 @@ export class BajieClient {
 
   async markOrderCompleted(orderId: string) {
     const url = `${this.baseUrl}/rent/order/complete`;
-    return httpRequest<any>(url, {
+    return httpRequest<Record<string, unknown>>(url, {
       method: "POST",
       headers: { Authorization: this.authHeader },
       body: { orderId },

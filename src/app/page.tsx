@@ -34,22 +34,7 @@ export default function Home() {
       setUser(JSON.parse(userData));
     }
     
-    // Загружаем Leaflet CSS
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-    document.head.appendChild(link);
-    
-    // Задержка для загрузки Leaflet
-    setTimeout(() => {
-      setMapReady(true);
-    }, 100);
-    
-    return () => {
-      if (document.head.contains(link)) {
-        document.head.removeChild(link);
-      }
-    };
+    setMapReady(true);
   }, []);
   if (user) {
     // Авторизованный пользователь - показываем карту как в "Бери Заряд"
