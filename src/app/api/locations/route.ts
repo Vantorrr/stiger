@@ -110,21 +110,32 @@ const DEVICE_LOCATIONS = [
 
 export async function GET(req: NextRequest) {
   try {
-    // В будущем можно обновлять данные из Bajie API
-    // const bajie = new BajieClient();
-    // for (const location of DEVICE_LOCATIONS) {
-    //   const info = await bajie.getDeviceInfo(location.id);
-    //   if (info.data?.code === 0) {
-    //     location.available = info.data.data.cabinet.emptySlots;
-    //     location.online = true;
-    //   }
-    // }
+    // Получаем реальные данные из Bajie API
+    const bajie = new BajieClient();
+    const locationsWithRealData = [...DEVICE_LOCATIONS];
+    
+    // Обновляем данные для каждого устройства
+    for (const location of locationsWithRealData) {
+      try {
+        const info = await bajie.getDeviceInfo(location.id);
+        if (info.data?.code === 0 && info.data.data) {
+          // Обновляем количество доступных power bank
+          location.available = info.data.data.cabinet.emptySlots || 0;
+          location.total = info.data.data.cabinet.slots?.length || 8;
+          location.online = info.data.data.cabinet.online || false;
+        }
+      } catch (error) {
+        console.error(`Failed to fetch data for ${location.id}:`, error);
+        // Если не удалось получить данные, оставляем статус offline
+        location.online = false;
+      }
+    }
 
     return NextResponse.json({
       success: true,
-      locations: DEVICE_LOCATIONS,
-      total: DEVICE_LOCATIONS.length,
-      online: DEVICE_LOCATIONS.filter(l => l.online).length
+      locations: locationsWithRealData,
+      total: locationsWithRealData.length,
+      online: locationsWithRealData.filter(l => l.online).length
     });
 
   } catch (error) {

@@ -93,7 +93,7 @@ export default function Home() {
         </main>
         
         {/* Элегантная плавающая кнопка "Взять заряд" ПОВЕРХ КАРТЫ */}
-        <div className="fixed z-50 left-4 right-4" style={{ bottom: "calc(56px + env(safe-area-inset-bottom))" }}>
+        <div className="fixed z-[9999] left-4 right-4 bottom-20">
             <a href="/scan" className="group relative flex items-center justify-center h-16 w-full max-w-[380px] mx-auto rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300">
               <div className="absolute inset-0 bg-gradient-to-r from-purple-700 to-blue-700 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <div className="relative flex items-center gap-3">

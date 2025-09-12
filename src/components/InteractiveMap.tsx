@@ -79,6 +79,8 @@ interface InteractiveMapProps {
 export default function InteractiveMap({ onDeviceSelect, className = "" }: InteractiveMapProps) {
   const [map, setMap] = useState<any>(null);
   const router = useRouter();
+  const [locations, setLocations] = useState<typeof DEVICE_LOCATIONS>(DEVICE_LOCATIONS);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Фикс иконок маркеров
@@ -88,7 +90,29 @@ export default function InteractiveMap({ onDeviceSelect, className = "" }: Inter
       iconUrl: "/leaflet/marker-icon.png",
       shadowUrl: "/leaflet/marker-shadow.png",
     });
+    
+    // Загружаем данные
+    fetchLocations();
+    
+    // Обновляем каждые 30 секунд
+    const interval = setInterval(fetchLocations, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
+  
+  const fetchLocations = async () => {
+    try {
+      const res = await fetch("/api/locations");
+      const data = await res.json();
+      if (data.success && data.locations) {
+        setLocations(data.locations);
+      }
+    } catch (error) {
+      console.error("Failed to fetch locations:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const createCustomIcon = (device: typeof DEVICE_LOCATIONS[0]) => {
     const color = device.active ? "#7c3aed" : device.online && device.available > 0 ? "#10b981" : device.online ? "#ef4444" : "#6b7280";
@@ -159,7 +183,7 @@ export default function InteractiveMap({ onDeviceSelect, className = "" }: Inter
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         
-        {DEVICE_LOCATIONS.map((device) => (
+        {locations.map((device) => (
           <Marker
             key={device.id}
             position={[device.lat, device.lng]}
