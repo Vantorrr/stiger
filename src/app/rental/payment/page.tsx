@@ -38,7 +38,36 @@ export default function PaymentPage() {
   }, [router, orderId]);
 
   const handlePayment = () => {
-    if (!scriptLoaded || !window.cp || !order) {
+    if (!order) {
+      alert("Заказ не найден");
+      return;
+    }
+
+    // Проверяем выбранный способ оплаты
+    const selectedPayment = document.querySelector('input[name="payment"]:checked');
+    if (!selectedPayment) {
+      alert("Выберите способ оплаты");
+      return;
+    }
+
+    const paymentType = selectedPayment.nextElementSibling?.querySelector('.font-medium')?.textContent;
+    
+    if (paymentType === "СБП") {
+      // Для СБП генерируем QR-код или редирект
+      setLoading(true);
+      
+      // Здесь будет интеграция с СБП API
+      // Пока делаем заглушку
+      setTimeout(() => {
+        alert("СБП платеж в разработке. Используйте банковскую карту.");
+        setLoading(false);
+      }, 1000);
+      
+      return;
+    }
+
+    // Для карт используем CloudPayments
+    if (!scriptLoaded || !window.cp) {
       alert("Платежная система еще не загружена, попробуйте снова");
       return;
     }
@@ -160,20 +189,60 @@ export default function PaymentPage() {
             {/* Информация о способе оплаты */}
             <div className="glass-effect rounded-3xl p-6 mb-8">
               <h3 className="font-semibold mb-4 text-lg">Способ оплаты</h3>
-              <div className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
-                <div className="w-16 h-12 gradient-bg rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-lg">
-                  CP
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium text-gray-900 dark:text-white">CloudPayments</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Безопасная оплата картой • SSL защита</p>
-                </div>
-                <div className="text-green-500">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                  </svg>
-                </div>
-              </div>
+              
+              {/* Сохраненные способы оплаты */}
+              {(() => {
+                const savedCards = JSON.parse(localStorage.getItem("stinger_cards") || "[]");
+                const savedSBP = localStorage.getItem("stinger_sbp_phone");
+                
+                if (savedCards.length > 0 || savedSBP) {
+                  return (
+                    <div className="space-y-3">
+                      {savedCards.map((card: any, index: number) => (
+                        <label key={card.id} className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/50 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors">
+                          <input type="radio" name="payment" defaultChecked={index === 0} className="w-4 h-4 text-purple-600" />
+                          <div className="flex items-center gap-3 flex-1">
+                            <div className="w-12 h-8 rounded bg-gradient-to-r from-gray-700 to-gray-900 flex items-center justify-center text-white text-xs font-bold">
+                              {card.type.toUpperCase()}
+                            </div>
+                            <span className="font-mono">{card.mask}</span>
+                          </div>
+                        </label>
+                      ))}
+                      
+                      {savedSBP && (
+                        <label className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/50 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors">
+                          <input type="radio" name="payment" defaultChecked={savedCards.length === 0} className="w-4 h-4 text-purple-600" />
+                          <div className="flex items-center gap-3 flex-1">
+                            <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-green-500 to-blue-500 flex items-center justify-center text-white text-lg">
+                              📱
+                            </div>
+                            <div>
+                              <p className="font-medium">СБП</p>
+                              <p className="text-sm text-gray-500">+{savedSBP}</p>
+                            </div>
+                          </div>
+                        </label>
+                      )}
+                      
+                      <a href="/payment" className="block text-center text-purple-600 hover:text-purple-700 font-medium text-sm mt-2">
+                        + Добавить способ оплаты
+                      </a>
+                    </div>
+                  );
+                }
+                
+                // Если нет сохраненных способов
+                return (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500 mb-4">Нет сохраненных способов оплаты</p>
+                    <a href="/payment" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl gradient-bg text-white font-medium">
+                      <span>💳</span>
+                      <span>Добавить способ оплаты</span>
+                    </a>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Кнопка оплаты */}

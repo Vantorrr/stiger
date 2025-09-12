@@ -88,20 +88,15 @@ export default function Home() {
           {/* Убрали вторую полоску, чтобы не было линии */}
           <div className="pointer-events-none absolute left-0 right-0 bottom-0 h-28 bg-gradient-to-t from-white to-transparent dark:from-slate-900"></div>
           
-          {/* Premium плавающая кнопка "Взять заряд" */}
+          {/* Элегантная плавающая кнопка "Взять заряд" */}
           <div className="absolute z-30 left-4 right-4" style={{ bottom: "calc(56px + env(safe-area-inset-bottom))" }}>
-            <a href="/scan" className="group relative overflow-hidden flex items-center justify-center h-20 w-full max-w-[420px] mx-auto rounded-3xl gradient-bg text-white shadow-2xl transform hover:-translate-y-2 transition-all duration-300 button-premium pulse-glow">
-              <div className="relative z-10 flex flex-col items-center gap-2 px-6">
-                <div className="flex items-center gap-3 leading-none">
-                  <span className="text-3xl lightning-animation">⚡</span>
-                  <span className="font-bold text-xl tracking-wider shimmer">ВЗЯТЬ ЗАРЯД</span>
-                </div>
-                <div className="text-sm opacity-90 leading-none">Отсканируй QR-код на автомате</div>
-              </div>
-              <div className="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full shadow-lg">
-                <div className="absolute inset-0 bg-green-400 rounded-full animate-ping" />
-                <div className="absolute inset-0 bg-green-500 rounded-full flex items-center justify-center text-xs font-bold">
-                  ✓
+            <a href="/scan" className="group relative flex items-center justify-center h-16 w-full max-w-[380px] mx-auto rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300">
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-700 to-blue-700 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="relative flex items-center gap-3">
+                <span className="text-2xl">⚡</span>
+                <div className="text-center">
+                  <div className="font-semibold text-lg leading-tight">Взять заряд</div>
+                  <div className="text-xs opacity-80">Сканировать QR-код</div>
                 </div>
               </div>
             </a>
@@ -133,21 +128,19 @@ export default function Home() {
                   Stiger — революция в прокате power bank. Оплати, забери, верни в любом шкафу города.
                 </p>
               </div>
-              <div className="flex flex-col sm:flex-row gap-6 justify-center lg:justify-start">
-                <a href="/map" className="group relative overflow-hidden inline-flex items-center justify-center h-20 px-12 rounded-3xl gradient-premium text-white font-bold text-xl shadow-2xl button-premium pulse-glow transform hover:-translate-y-2 transition-all duration-500 hover:scale-110">
-                  <span className="relative z-10 flex items-center gap-4">
-                    <span className="text-3xl lightning-animation">⚡</span>
-                    <span className="relative tracking-wider">
-                      ВЗЯТЬ ЗАРЯД
-                      <div className="absolute inset-0 shimmer"></div>
-                    </span>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                <a href="/map" className="group relative inline-flex items-center justify-center h-14 px-8 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300">
+                  <div className="absolute inset-0 bg-gradient-to-r from-orange-600 to-red-600 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <span className="relative flex items-center gap-3">
+                    <span className="text-xl">⚡</span>
+                    <span>Взять заряд</span>
                   </span>
                 </a>
                 
-                <a href="/login" className="group relative overflow-hidden inline-flex items-center justify-center h-20 px-12 rounded-3xl glass-premium text-white font-bold text-xl shadow-xl transform hover:-translate-y-2 transition-all duration-500 hover:scale-110 card-hover">
-                  <span className="relative z-10 flex items-center gap-3">
-                    <span className="text-2xl">👤</span>
-                    Войти в аккаунт
+                <a href="/login" className="group relative inline-flex items-center justify-center h-14 px-8 rounded-xl bg-white/10 backdrop-blur border border-white/20 text-white font-semibold text-lg hover:bg-white/20 transition-all duration-300">
+                  <span className="flex items-center gap-3">
+                    <span className="text-xl">👤</span>
+                    <span>Войти в аккаунт</span>
                   </span>
                 </a>
               </div>
