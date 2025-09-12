@@ -8,10 +8,10 @@ export const dynamic = "force-dynamic";
 const DEVICE_LOCATIONS = [
   {
     id: "DTA35552",
-    name: "Тестовый шкаф Stiger",
-    address: "Батуми, XCFR+GV7 ერის წყალი",
-    lat: 42.97422765394206,
-    lng: 41.4435043146976,
+    name: "ТЦ Афимолл Сити",
+    address: "Москва Сити, 2 этаж, Starbucks Coffee",
+    lat: 55.7496,
+    lng: 37.5396,
     available: 8,
     total: 8,
     online: true
@@ -19,7 +19,7 @@ const DEVICE_LOCATIONS = [
   {
     id: "DTA35567",
     name: "ТЦ Европейский",
-    address: "пл. Киевского Вокзала, 2",
+    address: "пл. Киевского Вокзала, 2, 1 этаж у входа",
     lat: 55.7456,
     lng: 37.5675,
     available: 5,
@@ -28,13 +28,13 @@ const DEVICE_LOCATIONS = [
   },
   {
     id: "DTA35566",
-    name: "ТЦ Афимолл",
-    address: "Пресненская наб., 2",
-    lat: 55.7496,
-    lng: 37.5396,
+    name: "Метро Арбатская",
+    address: "Выход к ул. Новый Арбат",
+    lat: 55.7520,
+    lng: 37.6004,
     available: 3,
     total: 8,
-    online: false
+    online: true
   },
   {
     id: "DTA35565",

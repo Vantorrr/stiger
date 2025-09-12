@@ -30,10 +30,10 @@ import L from "leaflet";
 const DEVICE_LOCATIONS = [
   {
     id: "DTA35552",
-    name: "Тестовый шкаф (ВКЛЮЧЕН)",
-    address: "Батуми, XCFR+GV7 ერის წყალი", // Реальный адрес из API
-    lat: 42.97422765394206, // Реальные координаты из API
-    lng: 41.4435043146976,
+    name: "ТЦ Афимолл Сити",
+    address: "Москва Сити, 2 этаж, Starbucks Coffee",
+    lat: 55.7496, // Реальные координаты Афимолл
+    lng: 37.5396,
     available: 8,
     total: 8,
     online: true,
@@ -42,22 +42,22 @@ const DEVICE_LOCATIONS = [
   {
     id: "DTA35567",
     name: "ТЦ Европейский",
-    address: "пл. Киевского Вокзала, 2",
+    address: "пл. Киевского Вокзала, 2, 1 этаж у входа",
     lat: 55.7456,
     lng: 37.5675,
-    available: 0,
+    available: 5,
     total: 8,
-    online: false
+    online: true
   },
   {
     id: "DTA35566",
-    name: "ТЦ Афимолл",
-    address: "Пресненская наб., 2",
-    lat: 55.7496,
-    lng: 37.5396,
-    available: 0,
+    name: "Метро Арбатская",
+    address: "Выход к ул. Новый Арбат",
+    lat: 55.7520,
+    lng: 37.6004,
+    available: 3,
     total: 8,
-    online: false
+    online: true
   },
   {
     id: "DTA35565",
@@ -91,8 +91,8 @@ export default function InteractiveMap({ onDeviceSelect, className = "" }: Inter
   }, []);
 
   const createCustomIcon = (device: typeof DEVICE_LOCATIONS[0]) => {
-    const color = device.active ? "#10b981" : device.online ? "#3b82f6" : "#6b7280";
-    const size = device.active ? 40 : 30;
+    const color = device.active ? "#7c3aed" : device.online && device.available > 0 ? "#10b981" : device.online ? "#ef4444" : "#6b7280";
+    const size = device.active ? 50 : 40;
     
     return L.divIcon({
       className: "custom-marker",
@@ -107,26 +107,29 @@ export default function InteractiveMap({ onDeviceSelect, className = "" }: Inter
           justify-content: center;
           color: white;
           font-weight: bold;
-          font-size: ${device.active ? '16px' : '12px'};
-          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+          font-size: ${device.active ? '20px' : '16px'};
+          box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+          border: 3px solid white;
           ${device.active ? 'animation: pulse 2s infinite;' : ''}
         ">
-          ${device.available}
+          ${device.active ? '⚡' : device.available}
         </div>
         ${device.active ? `
           <div style="
             position: absolute;
-            top: -30px;
+            top: -35px;
             left: 50%;
             transform: translateX(-50%);
-            background: #10b981;
+            background: linear-gradient(135deg, #7c3aed 0%, #3b82f6 100%);
             color: white;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
             white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
           ">
-            ВАШ ШКАФ
+            Stiger
           </div>
         ` : ''}
       `,
@@ -164,10 +167,10 @@ export default function InteractiveMap({ onDeviceSelect, className = "" }: Inter
       `}</style>
       
       <MapContainer
-        center={[42.97422765394206, 41.4435043146976]}
-        zoom={14}
+        center={[55.7496, 37.5396]}
+        zoom={13}
         className={className}
-        whenCreated={setMap}
+        ref={setMap}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -184,33 +187,55 @@ export default function InteractiveMap({ onDeviceSelect, className = "" }: Inter
             }}
           >
             <Popup>
-              <div className="p-2">
-                <h3 className="font-bold text-lg">{device.name}</h3>
-                <p className="text-sm text-gray-600">{device.address}</p>
-                <div className="mt-2">
-                  <p className="text-sm">
-                    ID: <span className="font-mono">{device.id}</span>
-                  </p>
-                  <p className="text-sm">
-                    Статус: {device.online ? (
-                      <span className="text-green-600">Онлайн</span>
-                    ) : (
-                      <span className="text-red-600">Офлайн</span>
-                    )}
-                  </p>
-                  {device.online && (
-                    <p className="text-sm">
-                      Доступно: <span className="font-bold">{device.available}/{device.total}</span>
-                    </p>
-                  )}
+              <div className="p-4 min-w-[280px]">
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center text-white text-xl font-bold">
+                    ⚡
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-lg leading-tight">{device.name}</h3>
+                    <p className="text-sm text-gray-600 mt-1">{device.address}</p>
+                  </div>
                 </div>
-                {device.online && device.available > 0 && (
-                  <button
-                    onClick={() => handleMarkerClick(device.id)}
-                    className="mt-3 w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                  >
-                    Арендовать
-                  </button>
+                
+                {device.online ? (
+                  <>
+                    <div className="mb-3 p-3 rounded-lg bg-gray-50">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-gray-600">Доступно power bank:</span>
+                        <span className={`font-bold text-lg ${device.available > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {device.available}/{device.total}
+                        </span>
+                      </div>
+                      <div className="flex gap-1">
+                        {[...Array(device.total)].map((_, i) => (
+                          <div
+                            key={i}
+                            className={`flex-1 h-2 rounded-full ${
+                              i < device.available ? 'bg-green-500' : 'bg-gray-300'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {device.available > 0 ? (
+                      <button
+                        onClick={() => handleMarkerClick(device.id)}
+                        className="w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all"
+                      >
+                        Взять заряд
+                      </button>
+                    ) : (
+                      <div className="text-center py-3 text-red-600 font-medium">
+                        Все power bank заняты
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-center py-3 text-gray-500">
+                    Устройство временно недоступно
+                  </div>
                 )}
               </div>
             </Popup>
