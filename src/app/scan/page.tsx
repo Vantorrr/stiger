@@ -1,11 +1,14 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import AuthenticatedLayout from "@/components/AuthenticatedLayout";
 
 export default function ScanPage() {
   const [user, setUser] = useState(null);
   const [scanning, setScanning] = useState(false);
+  const [deviceId, setDeviceId] = useState("");
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -25,18 +28,47 @@ export default function ScanPage() {
         video: { facingMode: "environment" } 
       });
       
-      // Здесь будет интеграция с QR-сканером
-      setTimeout(() => {
-        setScanning(false);
-        alert("QR-код отсканирован! (демо)");
-        // Здесь будет переход к выбору тарифа и оплате
-      }, 3000);
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+      
+      // TODO: Интегрировать реальный QR сканер (например, qr-scanner или jsQR)
+      // Пока делаем демо с ручным вводом
       
     } catch (error) {
       setScanning(false);
       alert("Не удалось получить доступ к камере");
     }
   };
+
+  const stopScan = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    setScanning(false);
+  };
+
+  const processQRCode = () => {
+    if (!deviceId) {
+      alert("Введите ID устройства");
+      return;
+    }
+    
+    stopScan();
+    // Переход к выбору тарифа
+    router.push(`/rental/tariff?deviceId=${deviceId}`);
+  };
+
+  useEffect(() => {
+    // Cleanup при размонтировании
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
 
   if (!user) {
     return <div>Загрузка...</div>;
@@ -68,15 +100,48 @@ export default function ScanPage() {
               </button>
             ) : (
               <div className="space-y-4">
-                <div className="w-full h-64 rounded-xl bg-black/20 flex items-center justify-center">
-                  <div className="text-white/70">Камера активна...</div>
+                <div className="w-full h-64 rounded-xl overflow-hidden bg-black relative">
+                  <video 
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 pointer-events-none">
+                    <div className="absolute inset-0 border-2 border-white/20" />
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 border-2 border-white rounded-xl" />
+                  </div>
                 </div>
-                <button 
-                  onClick={() => setScanning(false)}
-                  className="w-full h-12 rounded-xl bg-red-500 text-white font-semibold hover:bg-red-600 transition-colors"
-                >
-                  Отменить
-                </button>
+                
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Или введите ID устройства вручную:
+                    </label>
+                    <input
+                      type="text"
+                      value={deviceId}
+                      onChange={(e) => setDeviceId(e.target.value)}
+                      placeholder="Например: DTA35552"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
+                  
+                  <div className="flex gap-3">
+                    <button 
+                      onClick={stopScan}
+                      className="flex-1 h-12 rounded-xl bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                    >
+                      Отменить
+                    </button>
+                    <button 
+                      onClick={processQRCode}
+                      className="flex-1 h-12 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold hover:shadow-lg transition-all"
+                    >
+                      Продолжить
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
 

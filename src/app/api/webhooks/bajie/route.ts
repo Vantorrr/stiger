@@ -15,10 +15,54 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({}));
-  // TODO: persist event, update order state, handle return events
-  console.log("[Bajie Event]", body);
+  console.log("[Bajie Event]", JSON.stringify(body, null, 2));
+  
+  // Обрабатываем события от Bajie
+  const { event, deviceId, data } = body;
+  
+  switch (event) {
+    case "BATTERY_IN":
+      // Батарея возвращена
+      console.log(`[Bajie] Battery returned to ${deviceId}, slot: ${data?.slotNum}`);
+      
+      // TODO: 
+      // 1. Найти активный заказ по deviceId и batteryId
+      // 2. Рассчитать финальную стоимость
+      // 3. Вызвать CloudPayments Confirm для списания
+      // 4. Обновить статус заказа на completed
+      
+      break;
+      
+    case "BATTERY_BORROW_OUT":
+      // Батарея взята (подтверждение выдачи)
+      console.log(`[Bajie] Battery borrowed from ${deviceId}, slot: ${data?.slotNum}`);
+      break;
+      
+    case "CABINET_ONLINE":
+    case "CABINET_OFFLINE":
+      // Статус устройства изменился
+      console.log(`[Bajie] Cabinet ${deviceId} is ${event === "CABINET_ONLINE" ? "online" : "offline"}`);
+      break;
+      
+    case "CABINET_STATUS":
+      // Обновление статуса шкафа
+      console.log(`[Bajie] Cabinet ${deviceId} status update:`, data);
+      break;
+      
+    case "ADMIN_RENTAL_ORDER":
+      // Административное действие с заказом
+      console.log(`[Bajie] Admin action on rental order:`, data);
+      break;
+      
+    case "BATTERY_ABNORMAL_WARNING":
+      // Проблема с батареей
+      console.log(`[Bajie] Battery warning for ${deviceId}:`, data);
+      break;
+  }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, code: 0 });
 }
+
+
 
 

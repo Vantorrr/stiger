@@ -25,7 +25,7 @@ export interface CreateRentOrderRequest {
 
 export class BajieClient {
   private baseUrl: string;
-  private authHeader: string;
+  public authHeader: string;
 
   constructor(params?: { baseUrl?: string; username?: string; password?: string }) {
     const baseUrl = params?.baseUrl ?? process.env.BAJIE_BASE_URL ?? "https://developer.chargenow.top/cdb-open-api/v1";
@@ -38,12 +38,34 @@ export class BajieClient {
     this.authHeader = createBasicAuthHeader(u, p);
   }
 
-  async getDeviceInfo(deviceId: string) {
-    const url = `${this.baseUrl}/rent/cabinet/query?deviceId=${encodeURIComponent(deviceId)}`;
+  async getDeviceInfoByCabinetId(cabinetId: string) {
+    const url = `${this.baseUrl}/rent/cabinet/query?cabinetId=${encodeURIComponent(cabinetId)}`;
     return httpRequest<BajieDeviceInfoResponse>(url, {
       headers: { Authorization: this.authHeader },
       method: "GET",
     });
+  }
+
+  async getDeviceInfo(deviceIdOrCabinetId: string) {
+    // Try with deviceId first (IDs like DTAxxxxx are often deviceId), then fallback to cabinetId.
+    const byDeviceUrl = `${this.baseUrl}/rent/cabinet/query?deviceId=${encodeURIComponent(deviceIdOrCabinetId)}`;
+    const deviceRes = await httpRequest<BajieDeviceInfoResponse>(byDeviceUrl, {
+      headers: { Authorization: this.authHeader },
+      method: "GET",
+    });
+
+    // If backend returns generic error (code 500) or non-OK, try cabinetId as a fallback
+    const deviceCode = (deviceRes?.data as BajieDeviceInfoResponse | undefined)?.code;
+    if (!deviceRes.ok || deviceCode === 500) {
+      const byCabinetUrl = `${this.baseUrl}/rent/cabinet/query?cabinetId=${encodeURIComponent(deviceIdOrCabinetId)}`;
+      const cabinetRes = await httpRequest<BajieDeviceInfoResponse>(byCabinetUrl, {
+        headers: { Authorization: this.authHeader },
+        method: "GET",
+      });
+      return cabinetRes;
+    }
+
+    return deviceRes;
   }
 
   async createRentOrder(input: CreateRentOrderRequest) {
