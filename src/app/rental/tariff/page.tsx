@@ -123,71 +123,157 @@ export default function TariffPage() {
       <div className="min-h-screen px-6 py-20">
         <div className="max-w-4xl mx-auto">
           {/* Информация об устройстве */}
-          <div className="glass-effect rounded-2xl p-6 mb-8">
-            <h2 className="text-xl font-semibold mb-3">Устройство</h2>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-gray-500">ID:</span>
-                <span className="ml-2 font-medium">{deviceInfo.cabinet.id}</span>
+          <div className="glass-premium rounded-3xl p-8 mb-10 animate-fade-in">
+            <div className="flex items-start gap-6">
+              <div className="w-16 h-16 rounded-2xl gradient-bg flex items-center justify-center text-white text-2xl flex-shrink-0">
+                🏪
               </div>
-              <div>
-                <span className="text-gray-500">Доступно:</span>
-                <span className="ml-2 font-medium">{deviceInfo.cabinet.emptySlots} из {deviceInfo.cabinet.slots}</span>
-              </div>
-              <div className="col-span-2">
-                <span className="text-gray-500">Адрес:</span>
-                <span className="ml-2 font-medium">{deviceInfo.shop.address || "Не указан"}</span>
+              <div className="flex-1">
+                <h2 className="text-2xl font-bold mb-4 gradient-text">Точка выдачи</h2>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-gray-500 dark:text-gray-400">ID устройства:</span>
+                    <span className="font-mono font-semibold bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-lg">
+                      {deviceInfo.cabinet.id}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-gray-500 dark:text-gray-400">Доступно power bank:</span>
+                    <div className="flex items-center gap-2">
+                      <div className="flex gap-1">
+                        {[...Array(deviceInfo.cabinet.slots)].map((_, i) => (
+                          <div
+                            key={i}
+                            className={`w-2 h-6 rounded-full ${
+                              i < deviceInfo.cabinet.emptySlots
+                                ? 'bg-green-500'
+                                : 'bg-gray-300 dark:bg-gray-700'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-sm font-medium">
+                        {deviceInfo.cabinet.emptySlots}/{deviceInfo.cabinet.slots}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="pt-2">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Адрес:</p>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      {deviceInfo.shop.address || "Адрес не указан"}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Выбор тарифа */}
-          <h1 className="text-3xl font-bold text-center mb-8">Выберите тариф</h1>
+          <div className="text-center mb-12 animate-slide-up">
+            <h1 className="text-4xl font-bold mb-4">
+              <span className="gradient-text">Выберите тариф</span>
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400">
+              Оплачивайте только за время использования
+            </p>
+          </div>
           
-          <div className="grid gap-4 md:grid-cols-3">
-            {tariffs.map((tariff) => (
+          <div className="grid gap-6 md:grid-cols-3">
+            {tariffs.map((tariff, index) => (
               <div 
                 key={tariff.id}
-                className={`relative glass-effect rounded-2xl p-6 cursor-pointer transform transition-all hover:scale-105 ${
-                  tariff.popular ? 'ring-2 ring-purple-500' : ''
+                className={`relative glass-premium rounded-3xl p-8 cursor-pointer card-hover animate-scale-in ${
+                  tariff.popular ? 'scale-105' : ''
                 }`}
+                style={{ animationDelay: `${index * 0.1}s` }}
                 onClick={() => !loading && selectTariff(tariff.id)}
               >
                 {tariff.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-purple-500 text-white text-xs px-3 py-1 rounded-full">
-                    Популярный
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 gradient-bg text-white text-sm font-semibold px-6 py-2 rounded-full shadow-lg">
+                    🔥 Популярный выбор
                   </div>
                 )}
                 
                 <div className="text-center">
-                  <h3 className="text-xl font-bold mb-2">{tariff.name}</h3>
-                  <div className="text-3xl font-bold text-purple-600 mb-1">
-                    ₽{tariff.price}
+                  <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-6 ${
+                    tariff.popular ? 'gradient-bg' : 'bg-gray-100 dark:bg-gray-800'
+                  }`}>
+                    <span className="text-2xl">
+                      {tariff.id === '1hour' ? '⚡' : tariff.id === '4hours' ? '🔋' : '💪'}
+                    </span>
                   </div>
-                  <div className="text-sm text-gray-500 mb-4">{tariff.duration}</div>
                   
-                  <p className="text-sm text-gray-600 mb-4">{tariff.description}</p>
+                  <h3 className="text-2xl font-bold mb-2">{tariff.name}</h3>
                   
-                  <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <div className="text-xs text-gray-500">
-                      + депозит ₽{tariff.deposit}
+                  <div className="my-6">
+                    <div className="text-5xl font-bold gradient-text">
+                      ₽{tariff.price}
                     </div>
-                    <div className="text-sm font-semibold mt-1">
-                      Итого: ₽{tariff.price + tariff.deposit}
+                    <div className="text-sm text-gray-500 mt-1">{tariff.duration}</div>
+                  </div>
+                  
+                  <p className="text-gray-600 dark:text-gray-300 mb-8 min-h-[3rem]">
+                    {tariff.description}
+                  </p>
+                  
+                  <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm text-gray-500">Тариф</span>
+                      <span className="font-semibold">₽{tariff.price}</span>
+                    </div>
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="text-sm text-gray-500">Депозит</span>
+                      <span className="font-semibold">₽{tariff.deposit}</span>
+                    </div>
+                    <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold">Итого</span>
+                        <span className="text-xl font-bold gradient-text">
+                          ₽{tariff.price + tariff.deposit}
+                        </span>
+                      </div>
                     </div>
                   </div>
+                  
+                  <button className={`w-full mt-6 py-3 rounded-xl font-semibold transition-all button-premium ${
+                    tariff.popular 
+                      ? 'gradient-bg text-white shadow-lg' 
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
+                  }`}>
+                    Выбрать
+                  </button>
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="mt-8 p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-            <p className="text-sm text-blue-700 dark:text-blue-300">
-              <strong>ℹ️ Как работает депозит:</strong><br/>
-              • Депозит блокируется на карте при аренде<br/>
-              • После возврата powerbank депозит возвращается<br/>
-              • Если не вернуть вовремя, депозит будет списан
-            </p>
+          <div className="mt-12 glass-premium rounded-3xl p-8 animate-fade-in">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                <span className="text-xl">💡</span>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-lg mb-3">Как работает система оплаты</h3>
+                <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+                  <div className="flex items-start gap-2">
+                    <span className="text-green-500 mt-0.5">✓</span>
+                    <span>Депозит блокируется на карте при аренде</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-green-500 mt-0.5">✓</span>
+                    <span>После возврата powerbank депозит автоматически возвращается</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-green-500 mt-0.5">✓</span>
+                    <span>Оплата происходит только за фактическое время использования</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-yellow-500 mt-0.5">⚠️</span>
+                    <span>При просрочке возврата взимается дополнительная плата</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -108,47 +108,70 @@ export default function PaymentPage() {
             <h1 className="text-3xl font-bold text-center mb-8">Оплата аренды</h1>
             
             {/* Информация о заказе */}
-            <div className="glass-effect rounded-2xl p-6 mb-6">
-              <h2 className="text-xl font-semibold mb-4">Детали заказа</h2>
+            <div className="glass-premium rounded-3xl p-8 mb-8 animate-fade-in">
+              <h2 className="text-2xl font-bold mb-6 gradient-text">Детали заказа</h2>
               
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Устройство:</span>
-                  <span className="font-medium">{order.deviceId}</span>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/50">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                      <span className="text-lg">📍</span>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Устройство</p>
+                      <p className="font-mono font-semibold">{order.deviceId}</p>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Адрес:</span>
-                  <span className="font-medium text-sm text-right max-w-[200px]">
-                    {order.device.address || "Не указан"}
-                  </span>
+                
+                <div className="flex items-start justify-between p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/50">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                      <span className="text-lg">🏢</span>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Адрес</p>
+                      <p className="font-medium text-sm">
+                        {order.device.address || "Адрес не указан"}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Тариф:</span>
-                  <span className="font-medium">₽{tariffPrice}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Депозит:</span>
-                  <span className="font-medium">₽{depositAmount}</span>
-                </div>
-                <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
-                  <div className="flex justify-between text-lg font-bold">
-                    <span>Итого к оплате:</span>
-                    <span className="text-purple-600">₽{totalAmount}</span>
+                
+                <div className="mt-6 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600 dark:text-gray-300">Тариф</span>
+                    <span className="font-semibold text-lg">₽{tariffPrice}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600 dark:text-gray-300">Депозит</span>
+                    <span className="font-semibold text-lg">₽{depositAmount}</span>
+                  </div>
+                  <div className="pt-4 border-t-2 border-gray-200 dark:border-gray-700">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xl font-bold">Итого к оплате</span>
+                      <span className="text-3xl font-bold gradient-text">₽{totalAmount}</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Информация о способе оплаты */}
-            <div className="glass-effect rounded-2xl p-6 mb-6">
-              <h3 className="font-semibold mb-3">Способ оплаты</h3>
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-8 bg-gradient-to-r from-blue-600 to-red-600 rounded flex items-center justify-center text-white text-xs font-bold">
+            <div className="glass-effect rounded-3xl p-6 mb-8">
+              <h3 className="font-semibold mb-4 text-lg">Способ оплаты</h3>
+              <div className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
+                <div className="w-16 h-12 gradient-bg rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-lg">
                   CP
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm text-gray-600">CloudPayments</p>
-                  <p className="text-xs text-gray-500">Безопасная оплата картой</p>
+                  <p className="font-medium text-gray-900 dark:text-white">CloudPayments</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Безопасная оплата картой • SSL защита</p>
+                </div>
+                <div className="text-green-500">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  </svg>
                 </div>
               </div>
             </div>
@@ -157,9 +180,18 @@ export default function PaymentPage() {
             <button
               onClick={handlePayment}
               disabled={loading || !scriptLoaded}
-              className="w-full h-14 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full h-16 rounded-3xl gradient-bg text-white font-bold text-xl shadow-2xl button-premium disabled:opacity-50 disabled:cursor-not-allowed pulse-glow"
             >
-              {loading ? "Обработка..." : "Оплатить ₽" + totalAmount}
+              {loading ? (
+                <span className="flex items-center justify-center gap-3">
+                  <span className="animate-spin">⏳</span>
+                  Обработка...
+                </span>
+              ) : (
+                <span className="flex items-center justify-center gap-3">
+                  💳 Оплатить ₽{totalAmount}
+                </span>
+              )}
             </button>
 
             {/* Информация о безопасности */}
@@ -170,14 +202,49 @@ export default function PaymentPage() {
             </div>
 
             {/* Дополнительная информация */}
-            <div className="mt-8 p-4 rounded-xl bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
-              <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                <strong>⚡ Что произойдет после оплаты:</strong><br/>
-                1. PowerBank автоматически выедет из слота<br/>
-                2. Заберите его в течение 30 секунд<br/>
-                3. Время аренды начнется с момента выдачи<br/>
-                4. Верните в любой шкаф Stiger
-              </p>
+            <div className="mt-10 glass-effect rounded-3xl p-8 animate-fade-in">
+              <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+                <span className="text-2xl">⚡</span>
+                Что произойдет после оплаты
+              </h3>
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg gradient-success flex items-center justify-center flex-shrink-0 text-white font-bold">
+                    1
+                  </div>
+                  <div>
+                    <p className="font-medium">PowerBank выедет автоматически</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Слот откроется сразу после оплаты</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg gradient-success flex items-center justify-center flex-shrink-0 text-white font-bold">
+                    2
+                  </div>
+                  <div>
+                    <p className="font-medium">Заберите в течение 30 секунд</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Слот закроется автоматически</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg gradient-success flex items-center justify-center flex-shrink-0 text-white font-bold">
+                    3
+                  </div>
+                  <div>
+                    <p className="font-medium">Время аренды начнется</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">С момента выдачи PowerBank</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg gradient-success flex items-center justify-center flex-shrink-0 text-white font-bold">
+                    4
+                  </div>
+                  <div>
+                    <p className="font-medium">Верните в любой шкаф Stiger</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Найдите ближайший на карте</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

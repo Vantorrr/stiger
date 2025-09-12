@@ -88,18 +88,22 @@ export default function Home() {
           {/* Убрали вторую полоску, чтобы не было линии */}
           <div className="pointer-events-none absolute left-0 right-0 bottom-0 h-28 bg-gradient-to-t from-white to-transparent dark:from-slate-900"></div>
           
-          {/* Плавающая кнопка "Взять заряд" внизу в фирменных цветах */}
+          {/* Premium плавающая кнопка "Взять заряд" */}
           <div className="absolute z-30 left-4 right-4" style={{ bottom: "calc(56px + env(safe-area-inset-bottom))" }}>
-            <a href="/scan" className="group relative overflow-hidden flex items-center justify-center h-14 w-full max-w-[420px] mx-auto rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-2xl transform hover:-translate-y-1 transition-all duration-300">
-              <div className="relative z-10 flex flex-col items-center gap-1 px-4">
-                <div className="flex items-center gap-2 leading-none">
-                  <span className="text-xl lightning-animation">⚡</span>
-                  <span className="font-semibold">Взять заряд</span>
+            <a href="/scan" className="group relative overflow-hidden flex items-center justify-center h-20 w-full max-w-[420px] mx-auto rounded-3xl gradient-bg text-white shadow-2xl transform hover:-translate-y-2 transition-all duration-300 button-premium pulse-glow">
+              <div className="relative z-10 flex flex-col items-center gap-2 px-6">
+                <div className="flex items-center gap-3 leading-none">
+                  <span className="text-3xl lightning-animation">⚡</span>
+                  <span className="font-bold text-xl tracking-wider shimmer">ВЗЯТЬ ЗАРЯД</span>
                 </div>
-                <div className="text-xs opacity-90 leading-none">Отсканируй QR-код на автомате</div>
+                <div className="text-sm opacity-90 leading-none">Отсканируй QR-код на автомате</div>
               </div>
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition-opacity duration-300"></div>
+              <div className="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full shadow-lg">
+                <div className="absolute inset-0 bg-green-400 rounded-full animate-ping" />
+                <div className="absolute inset-0 bg-green-500 rounded-full flex items-center justify-center text-xs font-bold">
+                  ✓
+                </div>
+              </div>
             </a>
           </div>
         </main>
@@ -130,47 +134,56 @@ export default function Home() {
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-6 justify-center lg:justify-start">
-                <a href="/map" className="group relative overflow-hidden inline-flex items-center justify-center h-16 px-10 rounded-2xl bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 text-white font-bold text-lg shadow-2xl pulse-glow transform hover:-translate-y-2 transition-all duration-500 hover:scale-110">
-                  <span className="relative z-10 flex items-center gap-3">
-                    <span className="text-2xl lightning-animation">⚡</span>
-                    <span className="relative">
-                      Взять заряд
+                <a href="/map" className="group relative overflow-hidden inline-flex items-center justify-center h-20 px-12 rounded-3xl gradient-premium text-white font-bold text-xl shadow-2xl button-premium pulse-glow transform hover:-translate-y-2 transition-all duration-500 hover:scale-110">
+                  <span className="relative z-10 flex items-center gap-4">
+                    <span className="text-3xl lightning-animation">⚡</span>
+                    <span className="relative tracking-wider">
+                      ВЗЯТЬ ЗАРЯД
                       <div className="absolute inset-0 shimmer"></div>
                     </span>
                   </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 via-orange-400 to-red-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 rounded-2xl blur opacity-30 group-hover:opacity-60 transition-opacity duration-300"></div>
                 </a>
                 
-                <a href="/login" className="group relative overflow-hidden inline-flex items-center justify-center h-16 px-10 rounded-2xl bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 text-white font-bold text-lg shadow-2xl hover:shadow-3xl transform hover:-translate-y-2 transition-all duration-500 hover:scale-105">
+                <a href="/login" className="group relative overflow-hidden inline-flex items-center justify-center h-20 px-12 rounded-3xl glass-premium text-white font-bold text-xl shadow-xl transform hover:-translate-y-2 transition-all duration-500 hover:scale-110 card-hover">
                   <span className="relative z-10 flex items-center gap-3">
                     <span className="text-2xl">👤</span>
                     Войти в аккаунт
                   </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-purple-500 via-blue-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 </a>
               </div>
             </div>
             
             <div className="relative">
               <div className="float-animation">
-                <div className="glass-effect rounded-3xl p-8 shadow-2xl">
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="text-center space-y-2">
-                      <div className="text-4xl font-black bg-gradient-to-r from-green-500 to-teal-500 bg-clip-text text-transparent">10</div>
-                      <div className="text-sm text-gray-600 dark:text-gray-300">Активных шкафов</div>
+                <div className="glass-premium rounded-3xl p-10 shadow-2xl">
+                  <div className="grid grid-cols-2 gap-8">
+                    <div className="text-center space-y-3 animate-scale-in" style={{ animationDelay: "0.1s" }}>
+                      <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl gradient-success text-white text-2xl shadow-lg">
+                        🏪
+                      </div>
+                      <div className="text-5xl font-black gradient-text">10</div>
+                      <div className="text-sm font-medium text-gray-600 dark:text-gray-300">Активных шкафов</div>
                     </div>
-                    <div className="text-center space-y-2">
-                      <div className="text-4xl font-black bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">24/7</div>
-                      <div className="text-sm text-gray-600 dark:text-gray-300">Доступность</div>
+                    <div className="text-center space-y-3 animate-scale-in" style={{ animationDelay: "0.2s" }}>
+                      <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl gradient-bg text-white text-2xl shadow-lg">
+                        ⏰
+                      </div>
+                      <div className="text-5xl font-black gradient-text">24/7</div>
+                      <div className="text-sm font-medium text-gray-600 dark:text-gray-300">Доступность</div>
                     </div>
-                    <div className="text-center space-y-2">
-                      <div className="text-4xl font-black bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">1 мин</div>
-                      <div className="text-sm text-gray-600 dark:text-gray-300">Быстрая выдача</div>
+                    <div className="text-center space-y-3 animate-scale-in" style={{ animationDelay: "0.3s" }}>
+                      <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl gradient-premium text-white text-2xl shadow-lg">
+                        ⚡
+                      </div>
+                      <div className="text-5xl font-black gradient-text">30</div>
+                      <div className="text-sm font-medium text-gray-600 dark:text-gray-300">Секунд на выдачу</div>
                     </div>
-                    <div className="text-center space-y-2">
-                      <div className="text-4xl font-black bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">∞</div>
-                      <div className="text-sm text-gray-600 dark:text-gray-300">Точек возврата</div>
+                    <div className="text-center space-y-3 animate-scale-in" style={{ animationDelay: "0.4s" }}>
+                      <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 text-white text-2xl shadow-lg">
+                        🔄
+                      </div>
+                      <div className="text-5xl font-black gradient-text">∞</div>
+                      <div className="text-sm font-medium text-gray-600 dark:text-gray-300">Точек возврата</div>
                     </div>
                   </div>
                 </div>
