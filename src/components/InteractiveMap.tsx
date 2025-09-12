@@ -31,9 +31,9 @@ const DEVICE_LOCATIONS = [
   {
     id: "DTA35552",
     name: "Тестовый шкаф (ВКЛЮЧЕН)",
-    address: "Ваш адрес",
-    lat: 55.751244, // Центр Москвы - замените на реальные координаты
-    lng: 37.618423,
+    address: "Батуми, XCFR+GV7 ერის წყალი", // Реальный адрес из API
+    lat: 42.97422765394206, // Реальные координаты из API
+    lng: 41.4435043146976,
     available: 8,
     total: 8,
     online: true,
@@ -164,8 +164,8 @@ export default function InteractiveMap({ onDeviceSelect, className = "" }: Inter
       `}</style>
       
       <MapContainer
-        center={[55.751244, 37.618423]}
-        zoom={11}
+        center={[42.97422765394206, 41.4435043146976]}
+        zoom={14}
         className={className}
         whenCreated={setMap}
       >

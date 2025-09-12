@@ -8,10 +8,10 @@ export const dynamic = "force-dynamic";
 const DEVICE_LOCATIONS = [
   {
     id: "DTA35552",
-    name: "ТЦ Метрополис",
-    address: "Ленинградское шоссе, 16А",
-    lat: 55.7914,
-    lng: 37.5376,
+    name: "Тестовый шкаф Stiger",
+    address: "Батуми, XCFR+GV7 ერის წყალი",
+    lat: 42.97422765394206,
+    lng: 41.4435043146976,
     available: 8,
     total: 8,
     online: true
