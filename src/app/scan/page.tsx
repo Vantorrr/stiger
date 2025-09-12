@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import AuthenticatedLayout from "@/components/AuthenticatedLayout";
 
 export default function ScanPage() {
@@ -10,6 +10,7 @@ export default function ScanPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     const userData = localStorage.getItem("stinger_user");
@@ -18,7 +19,13 @@ export default function ScanPage() {
       return;
     }
     setUser(JSON.parse(userData));
-  }, [router]);
+    
+    // Если передан deviceId в URL, заполняем поле
+    const urlDeviceId = searchParams.get("deviceId");
+    if (urlDeviceId) {
+      setDeviceId(urlDeviceId);
+    }
+  }, [router, searchParams]);
 
   const startScan = async () => {
     setScanning(true);

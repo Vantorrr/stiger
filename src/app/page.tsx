@@ -4,10 +4,18 @@ import SideMenu from "@/components/SideMenu";
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 
-const MapContainer = dynamic(() => import("react-leaflet").then(m => m.MapContainer), { ssr: false });
-const TileLayer = dynamic(() => import("react-leaflet").then(m => m.TileLayer), { ssr: false });
-const Marker = dynamic(() => import("react-leaflet").then(m => m.Marker), { ssr: false });
-const Popup = dynamic(() => import("react-leaflet").then(m => m.Popup), { ssr: false });
+// Динамический импорт карты для избежания SSR ошибок
+const InteractiveMap = dynamic(() => import("@/components/InteractiveMap"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+        <p className="text-gray-600">Загрузка карты...</p>
+      </div>
+    </div>
+  ),
+});
 
 interface User {
   email: string;
@@ -73,15 +81,10 @@ export default function Home() {
           }}
         />
         
-        {/* Карта с правильными отступами (встраиваем готовую страницу, чтобы избежать ошибок инициализации) */}
+        {/* Интерактивная карта с маркерами устройств */}
         <main className="flex-1 relative pt-20 pb-0">
           <div className="w-full" style={{ height: "calc(100vh - 64px)" }}>
-            <iframe
-              src="https://www.openstreetmap.org/export/embed.html?bbox=37.59%2C55.74%2C37.64%2C55.77&layer=mapnik&marker=55.751244%2C37.618423"
-              title="Карта зарядов Stiger"
-              className="w-full h-full border-0 rounded-none"
-              loading="lazy"
-            />
+            <InteractiveMap />
           </div>
 
           {/* Мягкие градиентные переходы между картой и UI */}
