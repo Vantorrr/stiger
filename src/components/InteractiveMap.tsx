@@ -114,24 +114,6 @@ export default function InteractiveMap({ onDeviceSelect, className = "" }: Inter
         ">
           ${device.active ? '⚡' : device.available}
         </div>
-        ${device.active ? `
-          <div style="
-            position: absolute;
-            top: -35px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: linear-gradient(135deg, #7c3aed 0%, #3b82f6 100%);
-            color: white;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: bold;
-            white-space: nowrap;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-          ">
-            Stiger
-          </div>
-        ` : ''}
       `,
       iconSize: [size, size],
       iconAnchor: [size / 2, size / 2],
@@ -182,9 +164,6 @@ export default function InteractiveMap({ onDeviceSelect, className = "" }: Inter
             key={device.id}
             position={[device.lat, device.lng]}
             icon={createCustomIcon(device)}
-            eventHandlers={{
-              click: () => handleMarkerClick(device.id),
-            }}
           >
             <Popup>
               <div className="p-4 min-w-[280px]">
@@ -221,7 +200,11 @@ export default function InteractiveMap({ onDeviceSelect, className = "" }: Inter
                     
                     {device.available > 0 ? (
                       <button
-                        onClick={() => handleMarkerClick(device.id)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleMarkerClick(device.id);
+                        }}
                         className="w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all"
                       >
                         Взять заряд

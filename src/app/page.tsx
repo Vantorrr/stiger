@@ -82,17 +82,17 @@ export default function Home() {
         />
         
         {/* Интерактивная карта с маркерами устройств */}
-        <main className="flex-1 relative pt-20 pb-0">
-          <div className="w-full" style={{ height: "calc(100vh - 64px)" }}>
+        <main className="flex-1 relative pt-20 pb-20">
+          <div className="w-full" style={{ height: "calc(100vh - 144px)" }}>
             <InteractiveMap />
           </div>
 
           {/* Мягкие градиентные переходы между картой и UI */}
           {/* Убрали вторую полоску, чтобы не было линии */}
-          <div className="pointer-events-none absolute left-0 right-0 bottom-0 h-28 bg-gradient-to-t from-white to-transparent dark:from-slate-900"></div>
+          <div className="pointer-events-none absolute left-0 right-0 bottom-20 h-28 bg-gradient-to-t from-white to-transparent dark:from-slate-900"></div>
           
           {/* Элегантная плавающая кнопка "Взять заряд" */}
-          <div className="absolute z-30 left-4 right-4" style={{ bottom: "calc(56px + env(safe-area-inset-bottom))" }}>
+          <div className="absolute z-[60] left-4 right-4 bottom-4">
             <a href="/scan" className="group relative flex items-center justify-center h-16 w-full max-w-[380px] mx-auto rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300">
               <div className="absolute inset-0 bg-gradient-to-r from-purple-700 to-blue-700 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <div className="relative flex items-center gap-3">
