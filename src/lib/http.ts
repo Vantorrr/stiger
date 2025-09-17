@@ -1,3 +1,4 @@
+// HTTP utility functions for Bajie API
 export function createBasicAuthHeader(username: string, password: string): string {
   const auth = Buffer.from(`${username}:${password}`).toString('base64');
   return `Basic ${auth}`;
