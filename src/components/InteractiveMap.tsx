@@ -77,14 +77,14 @@ interface InteractiveMapProps {
 }
 
 export default function InteractiveMap({ onDeviceSelect, className = "" }: InteractiveMapProps) {
-  const [map, setMap] = useState<any>(null);
+  const [map, setMap] = useState<L.Map | null>(null);
   const router = useRouter();
   const [locations, setLocations] = useState<typeof DEVICE_LOCATIONS>(DEVICE_LOCATIONS);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Фикс иконок маркеров
-    delete (L.Icon.Default.prototype as any)._getIconUrl;
+    delete (L.Icon.Default.prototype as L.Icon.Default & { _getIconUrl?: unknown })._getIconUrl;
     L.Icon.Default.mergeOptions({
       iconRetinaUrl: "/leaflet/marker-icon-2x.png",
       iconUrl: "/leaflet/marker-icon.png",
