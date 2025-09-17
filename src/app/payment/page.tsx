@@ -1,11 +1,20 @@
 "use client";
 import AuthenticatedLayout from "@/components/AuthenticatedLayout";
 import { useEffect, useState } from "react";
+import Script from "next/script";
+
+declare global {
+  interface Window {
+    cp: any;
+  }
+}
 
 export default function PaymentPage() {
   const [selectedMethod, setSelectedMethod] = useState<string>("card");
-  const [savedCards, setSavedCards] = useState<Array<{id: string, mask: string, type: string}>>([]);
+  const [savedCards, setSavedCards] = useState<Array<{id: string, mask: string, type: string, token?: string}>>([]);
   const [savedPhone, setSavedPhone] = useState<string | null>(null);
+  const [scriptLoaded, setScriptLoaded] = useState(false);
+  const [loading, setLoading] = useState(false);
   
   useEffect(() => {
     // Загружаем сохраненные способы оплаты
@@ -16,27 +25,57 @@ export default function PaymentPage() {
     setSavedPhone(phone);
   }, []);
 
-  const saveCard = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const data = new FormData(e.currentTarget);
-    const pan = String(data.get("pan") || "").replace(/\s/g, "");
+  const saveCard = () => {
     
-    if (!/^\d{16}$/.test(pan)) {
-      alert("Введите 16 цифр номера карты");
+    if (!scriptLoaded || !window.cp) {
+      alert("Платежная система еще не загружена, попробуйте снова");
       return;
     }
     
-    const newCard = {
-      id: Date.now().toString(),
-      mask: `•••• ${pan.slice(-4)}`,
-      type: detectCardType(pan)
-    };
+    setLoading(true);
+    const widget = new window.cp.CloudPayments();
     
-    const updated = [...savedCards, newCard];
-    localStorage.setItem("stinger_cards", JSON.stringify(updated));
-    setSavedCards(updated);
-    alert("Карта добавлена!");
-    e.currentTarget.reset();
+    // Используем метод auth с суммой 1 рубль для проверки и токенизации карты
+    widget.auth({
+      publicId: "pk_2730acd022c1e22194e001a467f28", // Ваш публичный ключ
+      description: "Привязка карты к Stiger",
+      amount: 1,
+      currency: "RUB",
+      requireConfirmation: false, // Автоматическая отмена после проверки
+      saveCard: true, // Важно! Сохраняем карту для будущих платежей
+    }, {
+      onSuccess: (options: any) => {
+        // Сохраняем токен карты
+        const newCard = {
+          id: Date.now().toString(),
+          mask: options.CardLastFour ? `•••• ${options.CardLastFour}` : "•••• ••••",
+          type: options.CardType || "Unknown",
+          token: options.Token, // Токен для будущих платежей
+          transactionId: options.TransactionId
+        };
+        
+        const updated = [...savedCards, newCard];
+        localStorage.setItem("stinger_cards", JSON.stringify(updated));
+        setSavedCards(updated);
+        
+        setLoading(false);
+        alert("Карта успешно привязана!");
+        
+        // Возвращаем 1 рубль (отменяем транзакцию)
+        fetch("/api/cloudpayments/refund", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ transactionId: options.TransactionId })
+        });
+      },
+      onFail: (reason: any, options: any) => {
+        setLoading(false);
+        alert(`Ошибка: ${reason}`);
+      },
+      onComplete: () => {
+        setLoading(false);
+      }
+    });
   };
 
   const saveSBP = (e: React.FormEvent<HTMLFormElement>) => {
@@ -76,8 +115,13 @@ export default function PaymentPage() {
   ];
 
   return (
-    <AuthenticatedLayout>
-      <div className="min-h-screen px-6 py-20">
+    <>
+      <Script 
+        src="https://widget.cloudpayments.ru/bundles/cloudpayments.js"
+        onLoad={() => setScriptLoaded(true)}
+      />
+      <AuthenticatedLayout>
+        <div className="min-h-screen px-6 py-20">
         <div className="max-w-2xl mx-auto">
           <h1 className="text-3xl font-bold mb-8">
             <span className="gradient-text">Способы оплаты</span>
@@ -143,60 +187,14 @@ export default function PaymentPage() {
               )}
 
               {/* Форма добавления карты */}
-              <form onSubmit={saveCard} className="space-y-4">
-                <h3 className="font-medium text-lg">Добавить новую карту</h3>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Номер карты</label>
-                  <input
-                    name="pan"
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={19}
-                    placeholder="0000 0000 0000 0000"
-                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 input-premium"
-                    onChange={(e) => {
-                      // Форматирование номера карты
-                      let value = e.target.value.replace(/\s/g, '');
-                      let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
-                      e.target.value = formattedValue;
-                    }}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Срок действия</label>
-                    <input
-                      name="exp"
-                      type="text"
-                      placeholder="MM/YY"
-                      maxLength={5}
-                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
-                      onChange={(e) => {
-                        // Автоформатирование MM/YY
-                        let value = e.target.value.replace(/\D/g, '');
-                        if (value.length >= 2) {
-                          value = value.slice(0, 2) + '/' + value.slice(2, 4);
-                        }
-                        e.target.value = value;
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">CVC/CVV</label>
-                    <input
-                      name="cvc"
-                      type="text"
-                      inputMode="numeric"
-                      maxLength={3}
-                      placeholder="123"
-                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
-                    />
-                  </div>
-                </div>
-                <button className="w-full h-12 rounded-xl gradient-bg text-white font-semibold button-premium">
-                  Добавить карту
-                </button>
-              </form>
+              <h3 className="font-medium text-lg mb-4">Добавить новую карту</h3>
+              <button 
+                onClick={saveCard}
+                disabled={loading}
+                className="w-full h-12 rounded-xl gradient-bg text-white font-semibold button-premium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? "Обработка..." : "Привязать карту через CloudPayments"}
+              </button>
             </div>
           )}
 
@@ -289,6 +287,7 @@ export default function PaymentPage() {
         </div>
       </div>
     </AuthenticatedLayout>
+    </>
   );
 }
 
