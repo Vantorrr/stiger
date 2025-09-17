@@ -26,6 +26,7 @@ export default function PaymentPage() {
   }, []);
 
   const saveCard = () => {
+    console.log("saveCard called", { scriptLoaded, cp: window.cp });
     
     if (!scriptLoaded || !window.cp) {
       alert("Платежная система еще не загружена, попробуйте снова");
@@ -37,7 +38,7 @@ export default function PaymentPage() {
     
     // Используем метод auth с суммой 1 рубль для проверки и токенизации карты
     widget.auth({
-      publicId: "pk_2730acd022c1e22194e001a467f28", // Ваш публичный ключ
+      publicId: "pk_2730acd022c1e22194e001a467f28", // TODO: проверить полный ключ
       description: "Привязка карты к Stiger",
       amount: 1,
       currency: "RUB",
@@ -188,12 +189,15 @@ export default function PaymentPage() {
 
               {/* Форма добавления карты */}
               <h3 className="font-medium text-lg mb-4">Добавить новую карту</h3>
+              {!scriptLoaded && (
+                <div className="text-sm text-gray-500 mb-2">Загрузка платежной системы...</div>
+              )}
               <button 
                 onClick={saveCard}
-                disabled={loading}
+                disabled={loading || !scriptLoaded}
                 className="w-full h-12 rounded-xl gradient-bg text-white font-semibold button-premium disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? "Обработка..." : "Привязать карту через CloudPayments"}
+                {loading ? "Обработка..." : !scriptLoaded ? "Загрузка..." : "Привязать карту через CloudPayments"}
               </button>
             </div>
           )}
