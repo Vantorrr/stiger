@@ -17,8 +17,8 @@ export function cloudPaymentsPublicId(): string {
 }
 
 export function cloudPaymentsSecret(): string {
-  const key = process.env.CLOUDPAYMENTS_SECRET;
-  if (!key) throw new Error("CLOUDPAYMENTS_SECRET is not set");
+  const key = process.env.CLOUDPAYMENTS_API_SECRET;
+  if (!key) throw new Error("CLOUDPAYMENTS_API_SECRET is not set");
   return key;
 }
 
@@ -29,6 +29,8 @@ export function verifyCloudPaymentsHmac(rawBody: string, headerValue?: string | 
   // CloudPayments header commonly named "Content-HMAC"
   return hmac === headerValue;
 }
+
+
 
 
 
