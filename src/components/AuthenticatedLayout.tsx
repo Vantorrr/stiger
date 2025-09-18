@@ -66,7 +66,7 @@ export default function AuthenticatedLayout({ children }: { children: React.Reac
       </main>
 
       {/* Боковое меню */}
-      <SideMenu open={menuOpen} onClose={() => setMenuOpen(false)} clientNumber={user?.email ?? "000000"} />
+      <SideMenu open={menuOpen} onClose={() => setMenuOpen(false)} clientNumber={user?.phone || (user?.username ? `@${user.username}` : user?.telegramId?.toString()) || "000000"} />
     </div>
   );
 }

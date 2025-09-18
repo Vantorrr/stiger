@@ -107,7 +107,7 @@ export default function Home() {
           </div>
         
         {/* Боковое меню */}
-        <SideMenu open={menuOpen} onClose={() => setMenuOpen(false)} clientNumber={user?.email ?? "000000"} />
+        <SideMenu open={menuOpen} onClose={() => setMenuOpen(false)} clientNumber={user?.phone || user?.username || user?.telegramId || "000000"} />
       </div>
     );
   }

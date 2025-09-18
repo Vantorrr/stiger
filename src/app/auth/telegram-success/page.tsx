@@ -18,15 +18,30 @@ export default function TelegramSuccessPage() {
         id: `telegram_${userId}`,
         telegramId: parseInt(userId),
         firstName: decodeURIComponent(firstName),
+        lastName: '',
         username: username || null,
         phone: phone ? decodeURIComponent(phone) : null,
+        email: null,
+        name: decodeURIComponent(firstName),
         authDate: new Date().toISOString(),
       };
 
+      // Сначала очищаем старые данные
+      localStorage.removeItem('stinger_user');
+      // Сохраняем новые данные
       localStorage.setItem('stiger_user', JSON.stringify(userData));
       
-      // Редиректим на главную
-      router.push('/');
+      // Небольшая задержка перед редиректом
+      setTimeout(() => {
+        // Проверяем, находимся ли мы в Telegram WebApp
+        if (window.location.search.includes('tgWebAppPlatform')) {
+          // Если да, пытаемся открыть во внешнем браузере
+          window.open('https://stiger.vercel.app/', '_blank');
+        } else {
+          // Иначе просто редиректим
+          window.location.href = '/';
+        }
+      }, 1000);
     } else {
       // Если нет параметров, отправляем на авторизацию
       router.push('/auth');
