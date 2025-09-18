@@ -51,7 +51,7 @@ export default function Register() {
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600 dark:text-gray-300">
                 Уже есть аккаунт?{" "}
-                <Link href="/login" className="font-semibold text-purple-600 hover:text-purple-700 transition-colors">
+                <Link href="/auth" className="font-semibold text-purple-600 hover:text-purple-700 transition-colors">
                   Войти
                 </Link>
               </p>

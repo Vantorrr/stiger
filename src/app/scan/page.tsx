@@ -15,7 +15,7 @@ export default function ScanPage() {
   useEffect(() => {
     const userData = localStorage.getItem("stinger_user");
     if (!userData) {
-      router.push("/login");
+      router.push("/auth");
       return;
     }
     setUser(JSON.parse(userData));

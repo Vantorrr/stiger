@@ -49,7 +49,7 @@ export default function Navbar() {
             </>
           ) : (
             // Неавторизованный пользователь
-            <Link href="/login" className="inline-flex items-center justify-center h-9 px-4 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold hover:shadow-lg transition-all duration-300">
+            <Link href="/auth" className="inline-flex items-center justify-center h-9 px-4 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold hover:shadow-lg transition-all duration-300">
               Войти
             </Link>
           )}

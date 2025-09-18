@@ -19,7 +19,7 @@ export default function Dashboard() {
       // Для единообразного UX: авторизованных ведём на главную с картой
       router.replace("/");
     } else {
-      router.push("/login");
+      router.push("/auth");
     }
   }, [router]);
 
