@@ -141,7 +141,7 @@ export default function Home() {
                   </span>
                 </a>
                 
-                <a href="/login" className="group relative inline-flex items-center justify-center h-14 px-8 rounded-xl bg-white/10 backdrop-blur border border-white/20 text-white font-semibold text-lg hover:bg-white/20 transition-all duration-300">
+                <a href="/auth" className="group relative inline-flex items-center justify-center h-14 px-8 rounded-xl bg-white/10 backdrop-blur border border-white/20 text-white font-semibold text-lg hover:bg-white/20 transition-all duration-300">
                   <span className="flex items-center gap-3">
                     <span className="text-xl">👤</span>
                     <span>Войти в аккаунт</span>
