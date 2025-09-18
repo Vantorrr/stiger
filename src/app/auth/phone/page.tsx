@@ -32,9 +32,9 @@ export default function PhoneAuthPage() {
     setLoading(true);
     setError('');
 
-    // Имитация отправки SMS
+    // SMS временно недоступен
     setTimeout(() => {
-      setStep('code');
+      setError('SMS авторизация временно недоступна. Пожалуйста, используйте вход через Telegram');
       setLoading(false);
     }, 1000);
   };

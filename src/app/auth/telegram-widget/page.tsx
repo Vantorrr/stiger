@@ -114,16 +114,11 @@ export default function TelegramWidgetAuth() {
             </div>
           </div>
 
-          {/* Альтернативный вариант */}
+          {/* Информация */}
           <div className="mt-8 pt-8 border-t border-white/20">
-            <p className="text-white/60 text-sm mb-4">Или войдите по номеру телефона</p>
-            <a 
-              href="/auth/phone" 
-              className="inline-flex items-center gap-2 text-white/80 hover:text-white transition-colors"
-            >
-              <span>📱</span>
-              <span className="underline">Войти по номеру</span>
-            </a>
+            <p className="text-white/60 text-sm">
+              Нажмите кнопку выше для входа через Telegram
+            </p>
           </div>
         </div>
       </div>
