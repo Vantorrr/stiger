@@ -29,7 +29,7 @@ export default function AuthenticatedLayout({ children }: { children: React.Reac
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-slate-50 to-blue-50 dark:from-slate-900 dark:via-blue-900 dark:to-purple-900 relative">
       {/* Гамбургер меню слева */}
-      <div className="absolute top-6 left-6 z-30">
+      <div className="absolute top-6 left-6 z-[9998]">
         <button onClick={() => setMenuOpen(true)} className="glass-effect rounded-xl p-3 shadow-xl hover:bg-white/20 transition-all duration-300">
           <div className="w-6 h-6 flex flex-col justify-center space-y-1">
             <div className="w-full h-0.5 bg-gray-700 dark:bg-gray-300 rounded"></div>
@@ -40,7 +40,7 @@ export default function AuthenticatedLayout({ children }: { children: React.Reac
       </div>
 
       {/* Логотип по центру сверху */}
-      <div className="absolute top-6 left-1/2 transform -translate-x-1/2 z-20">
+      <div className="absolute top-6 left-1/2 transform -translate-x-1/2 z-[9997]">
         <div className="glass-effect rounded-2xl px-6 py-3 shadow-xl">
           <div className="flex items-center gap-3">
             <img src="/logoo.png" alt="Stiger" className="w-8 h-8 object-contain" />
