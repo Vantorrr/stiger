@@ -10,6 +10,7 @@ export default function TelegramSuccessPage() {
     const userId = searchParams.get('user_id');
     const firstName = searchParams.get('first_name');
     const username = searchParams.get('username');
+    const phone = searchParams.get('phone');
 
     if (userId && firstName) {
       // Создаем пользователя и сохраняем в localStorage
@@ -18,6 +19,7 @@ export default function TelegramSuccessPage() {
         telegramId: parseInt(userId),
         firstName: decodeURIComponent(firstName),
         username: username || null,
+        phone: phone ? decodeURIComponent(phone) : null,
         authDate: new Date().toISOString(),
       };
 

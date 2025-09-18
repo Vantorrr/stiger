@@ -24,21 +24,19 @@ export async function POST(req: NextRequest) {
           authDate: Math.floor(Date.now() / 1000),
         };
         
-        // Отправляем приветственное сообщение
+        // Отправляем запрос номера телефона
         const welcomeMessage = `🎉 *Добро пожаловать в Stiger!*
 
 Привет, ${user.first_name}! 
 
-Вы успешно авторизовались в системе Stiger.
+Для завершения регистрации поделитесь номером телефона 📱
 
-Теперь вы можете:
-🔋 Арендовать power bank
-💳 Привязать карту для быстрой оплаты  
-🗺️ Найти ближайшие станции
+Это нужно для:
+🔋 Аренды power bank
+💳 Уведомлений об оплате
+📞 Связи в экстренных случаях
 
-Вернитесь на сайт - вы уже авторизованы! ⚡
-
-_Приятного использования!_`;
+_Нажмите кнопку ниже для отправки номера_`;
 
         await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
           method: 'POST',
@@ -48,12 +46,14 @@ _Приятного использования!_`;
             text: welcomeMessage,
             parse_mode: 'Markdown',
             reply_markup: {
-              inline_keyboard: [[
+              keyboard: [[
                 {
-                  text: "🌐 Войти в Stiger",
-                  url: `https://stiger.vercel.app/auth/telegram-success?user_id=${user.id}&first_name=${encodeURIComponent(user.first_name)}&username=${user.username || ''}`
+                  text: "📱 Поделиться номером телефона",
+                  request_contact: true
                 }
-              ]]
+              ]],
+              resize_keyboard: true,
+              one_time_keyboard: true
             }
           }),
         });
@@ -64,6 +64,57 @@ _Приятного использования!_`;
         
         return NextResponse.json({ ok: true });
       }
+    }
+
+    // Обработка контакта (номера телефона)
+    if (update.message && update.message.contact) {
+      const chatId = update.message.chat.id;
+      const contact = update.message.contact;
+      const user = update.message.from;
+
+      // Обновляем данные пользователя с номером телефона
+      const userData = {
+        id: `telegram_${user.id}`,
+        telegramId: user.id,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        username: user.username,
+        phone: contact.phone_number,
+        authDate: Math.floor(Date.now() / 1000),
+      };
+
+      // Сохраняем пользователя с номером телефона
+      global.telegramUsers = global.telegramUsers || new Map();
+      global.telegramUsers.set(user.id, userData);
+
+      // Отправляем финальное сообщение
+      const finalMessage = `✅ *Регистрация завершена!*
+
+Спасибо, ${user.first_name}!
+
+Ваш номер: ${contact.phone_number}
+
+Теперь вы можете пользоваться всеми функциями Stiger! ⚡`;
+
+      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: finalMessage,
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [[
+              {
+                text: "🌐 Открыть Stiger",
+                url: `https://stiger.vercel.app/auth/telegram-success?user_id=${user.id}&first_name=${encodeURIComponent(user.first_name)}&username=${user.username || ''}&phone=${encodeURIComponent(contact.phone_number)}`
+              }
+            ]]
+          }
+        }),
+      });
+
+      return NextResponse.json({ ok: true });
     }
     
     return NextResponse.json({ ok: true });
