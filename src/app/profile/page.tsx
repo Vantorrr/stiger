@@ -17,7 +17,7 @@ export default function ProfilePage() {
         <section className="glass-effect rounded-2xl p-6 shadow-xl space-y-4">
           <Field label="Имя" value={user?.name || "Demo User"} />
           <Field label="Телефон" value={user?.phone || "+7 (900) 000-00-00"} />
-          <Field label="Email" value={user?.email || "demo@stinger.ru"} />
+          <Field label="Telegram" value={user?.telegramId ? `@telegram_${user.telegramId}` : "Не указан"} />
         </section>
 
         <section className="glass-effect rounded-2xl p-6 shadow-xl space-y-4">

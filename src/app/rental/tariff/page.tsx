@@ -52,7 +52,7 @@ export default function TariffPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           deviceId,
-          userId: user.phone || user.email || "demo-user",
+          userId: user.phone || user.id || `telegram_${user.telegramId}`,
           tariffId
         })
       });
