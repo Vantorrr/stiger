@@ -50,8 +50,8 @@ _Приятного использования!_`;
             reply_markup: {
               inline_keyboard: [[
                 {
-                  text: "🌐 Открыть Stiger",
-                  url: "https://stiger.vercel.app"
+                  text: "🌐 Войти в Stiger",
+                  url: `https://stiger.vercel.app/auth/telegram-success?user_id=${user.id}&first_name=${encodeURIComponent(user.first_name)}&username=${user.username || ''}`
                 }
               ]]
             }
