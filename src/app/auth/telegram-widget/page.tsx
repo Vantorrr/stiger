@@ -90,29 +90,29 @@ export default function TelegramWidgetAuth() {
 
           {/* Telegram Login Widget */}
           <div className="flex justify-center">
-            <div id="telegram-login-container" className="relative">
-              <Script
-                src="https://telegram.org/js/telegram-widget.js?22"
-                strategy="afterInteractive"
-                onLoad={() => {
-                  // Создаем виджет после загрузки скрипта
-                  const script = document.createElement('script');
-                  script.innerHTML = `
-                    TelegramLoginWidget.init(
-                      document.getElementById('telegram-login-container'),
-                      {
-                        bot_id: '8479841984',
-                        request_access: true,
-                        lang: 'ru'
-                      },
-                      window.onTelegramAuth
-                    );
-                  `;
-                  document.body.appendChild(script);
-                }}
-              />
-            </div>
+            <div 
+              dangerouslySetInnerHTML={{
+                __html: `
+                  <script async src="https://telegram.org/js/telegram-widget.js?22" 
+                    data-telegram-login="stiger_sms_bot"
+                    data-size="large"
+                    data-radius="16"
+                    data-onauth="onTelegramAuth"
+                    data-request-access="write"
+                    data-lang="ru">
+                  </script>
+                `
+              }}
+            />
           </div>
+          
+          <Script id="telegram-auth-handler" strategy="beforeInteractive">
+            {`
+              function onTelegramAuth(user) {
+                window.onTelegramAuth(user);
+              }
+            `}
+          </Script>
 
           {/* Информация */}
           <div className="mt-8 pt-8 border-t border-white/20">
