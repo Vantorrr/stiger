@@ -76,8 +76,8 @@ export default function PaymentPage() {
 
     const widget = new window.cp.CloudPayments();
     
-    // Используем charge для прямого списания (не auth!)
-    widget.charge({
+    // Используем auth для двухстадийной оплаты (холд средств)
+    widget.auth({
       publicId: order.paymentData.publicId,
       description: order.paymentData.description,
       amount: order.paymentData.amount,
