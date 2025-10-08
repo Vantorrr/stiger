@@ -2,13 +2,16 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AuthenticatedLayout from "@/components/AuthenticatedLayout";
+import jsQR from "jsqr";
 
 export default function ScanPage() {
   const [user, setUser] = useState(null);
   const [scanning, setScanning] = useState(false);
   const [deviceId, setDeviceId] = useState("");
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const scanIntervalRef = useRef<number | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -27,10 +30,57 @@ export default function ScanPage() {
     }
   }, [router, searchParams]);
 
+  const scanQRCode = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext("2d");
+
+    if (!context || video.readyState !== video.HAVE_ENOUGH_DATA) return;
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(imageData.data, imageData.width, imageData.height, {
+      inversionAttempts: "dontInvert",
+    });
+
+    if (code) {
+      console.log("✅ QR код найден:", code.data);
+      
+      // Извлекаем deviceId из QR кода
+      // Формат может быть разный, например:
+      // - просто "DTA35552"
+      // - URL: "https://chargenow.top/device/DTA35552"
+      // - JSON: {"deviceId":"DTA35552"}
+      
+      let extractedDeviceId = code.data;
+      
+      // Если это URL, извлекаем последнюю часть
+      if (code.data.includes('/')) {
+        const parts = code.data.split('/');
+        extractedDeviceId = parts[parts.length - 1];
+      }
+      
+      // Если это число (qrCode из API), используем его
+      if (/^\d+$/.test(code.data)) {
+        extractedDeviceId = code.data; // это qrCode: "1753847843"
+      }
+      
+      setDeviceId(extractedDeviceId);
+      stopScan();
+      
+      // Автоматически переходим к выбору тарифа
+      router.push(`/rental/tariff?deviceId=${extractedDeviceId}`);
+    }
+  };
+
   const startScan = async () => {
     setScanning(true);
     try {
-      // Запрос доступа к камере
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { facingMode: "environment" } 
       });
@@ -38,18 +88,23 @@ export default function ScanPage() {
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        
+        // Начинаем сканирование каждые 100ms
+        scanIntervalRef.current = window.setInterval(scanQRCode, 100);
       }
       
-      // TODO: Интегрировать реальный QR сканер (например, qr-scanner или jsQR)
-      // Пока делаем демо с ручным вводом
-      
     } catch (error) {
+      console.error("Ошибка доступа к камере:", error);
       setScanning(false);
-      alert("Не удалось получить доступ к камере");
+      alert("Не удалось получить доступ к камере. Проверьте разрешения.");
     }
   };
 
   const stopScan = () => {
+    if (scanIntervalRef.current) {
+      clearInterval(scanIntervalRef.current);
+      scanIntervalRef.current = null;
+    }
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
@@ -71,6 +126,9 @@ export default function ScanPage() {
   useEffect(() => {
     // Cleanup при размонтировании
     return () => {
+      if (scanIntervalRef.current) {
+        clearInterval(scanIntervalRef.current);
+      }
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
@@ -117,9 +175,15 @@ export default function ScanPage() {
                     playsInline
                     className="w-full h-full object-cover"
                   />
+                  <canvas ref={canvasRef} className="hidden" />
                   <div className="absolute inset-0 pointer-events-none">
                     <div className="absolute inset-0 border-2 border-white/20" />
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 border-2 border-white rounded-xl" />
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 border-2 border-white rounded-xl animate-pulse" />
+                  </div>
+                  <div className="absolute bottom-4 left-0 right-0 text-center">
+                    <p className="text-white text-sm font-semibold bg-black/50 backdrop-blur-sm px-4 py-2 rounded-full inline-block">
+                      Наведите на QR-код шкафа
+                    </p>
                   </div>
                 </div>
                 
