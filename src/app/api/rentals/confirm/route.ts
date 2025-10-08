@@ -8,10 +8,30 @@ export const dynamic = "force-dynamic";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { orderId, transactionId, deviceId, shopId, slotNum } = body;
+    const { orderId, transactionId, deviceId, shopId, slotNum, skipPayment } = body;
 
-    if (!orderId || !transactionId || !deviceId || !shopId) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    if (!orderId || !transactionId) {
+      return NextResponse.json({ error: "Missing orderId or transactionId" }, { status: 400 });
+    }
+    
+    // Получаем данные заказа из cookies или localStorage
+    let orderDeviceId = deviceId;
+    let orderShopId = shopId;
+    
+    if (!orderDeviceId || !orderShopId) {
+      // Пытаемся получить из cookies
+      const orderCookie = req.cookies.get(`order_${orderId}`);
+      if (orderCookie) {
+        const orderData = JSON.parse(orderCookie.value);
+        orderDeviceId = orderData.deviceId;
+        orderShopId = orderData.shopId;
+      }
+    }
+    
+    if (!orderDeviceId || !orderShopId) {
+      return NextResponse.json({ 
+        error: "Missing deviceId or shopId. Order may have expired." 
+      }, { status: 400 });
     }
 
     // TODO: Проверить статус транзакции в CloudPayments
@@ -20,7 +40,9 @@ export async function POST(req: NextRequest) {
     // Создаем аренду в Bajie
     const bajie = new BajieClient();
     const callbackUrl = `${process.env.APP_URL}/api/webhooks/bajie`;
-    const createUrl = `${process.env.BAJIE_BASE_URL}/rent/order/create?deviceId=${deviceId}&callbackURL=${encodeURIComponent(callbackUrl)}`;
+    const createUrl = `${process.env.BAJIE_BASE_URL}/rent/order/create?deviceId=${orderDeviceId}&callbackURL=${encodeURIComponent(callbackUrl)}`;
+    
+    console.log('Creating Bajie order:', createUrl);
     
     const createResponse = await fetch(createUrl, {
       method: "POST",
@@ -30,6 +52,8 @@ export async function POST(req: NextRequest) {
     });
 
     const createData = await createResponse.json();
+    
+    console.log('Bajie order response:', createData);
     
     if (createData.code !== 0) {
       // Отменяем оплату если не удалось создать аренду
@@ -43,7 +67,9 @@ export async function POST(req: NextRequest) {
     const tradeNo = createData.data.tradeNo;
 
     // Выдаем powerbank
-    const ejectUrl = `${process.env.BAJIE_BASE_URL}/cabinet/ejectByRent?cabinetid=${deviceId}&rentOrderId=${tradeNo}&slotNum=${slotNum || 1}`;
+    const ejectUrl = `${process.env.BAJIE_BASE_URL}/cabinet/ejectByRent?cabinetid=${orderDeviceId}&rentOrderId=${tradeNo}&slotNum=${slotNum || 1}`;
+    
+    console.log('Ejecting power bank:', ejectUrl);
     
     const ejectResponse = await fetch(ejectUrl, {
       method: "POST", 
@@ -53,6 +79,8 @@ export async function POST(req: NextRequest) {
     });
 
     const ejectData = await ejectResponse.json();
+    
+    console.log('Eject response:', ejectData);
     
     if (ejectData.code !== 0) {
       // Логируем ошибку, но не отменяем - пользователь может попробовать другой слот
