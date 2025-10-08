@@ -41,40 +41,39 @@ export default function ScanPage() {
 
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    try {
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+      const code = jsQR(imageData.data, imageData.width, imageData.height, {
+        inversionAttempts: "dontInvert",
+      });
 
-    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-    const code = jsQR(imageData.data, imageData.width, imageData.height, {
-      inversionAttempts: "dontInvert",
-    });
-
-    if (code) {
-      console.log("✅ QR код найден:", code.data);
-      
-      // Извлекаем deviceId из QR кода
-      // Формат может быть разный, например:
-      // - просто "DTA35552"
-      // - URL: "https://chargenow.top/device/DTA35552"
-      // - JSON: {"deviceId":"DTA35552"}
-      
-      let extractedDeviceId = code.data;
-      
-      // Если это URL, извлекаем последнюю часть
-      if (code.data.includes('/')) {
-        const parts = code.data.split('/');
-        extractedDeviceId = parts[parts.length - 1];
+      if (code) {
+        console.log("✅ QR код найден:", code.data);
+        
+        // Извлекаем deviceId из QR кода
+        let extractedDeviceId = code.data;
+        
+        // Если это URL, извлекаем последнюю часть
+        if (code.data.includes('/')) {
+          const parts = code.data.split('/');
+          extractedDeviceId = parts[parts.length - 1];
+        }
+        
+        // Если это число (qrCode из API), используем его
+        if (/^\d+$/.test(code.data)) {
+          extractedDeviceId = code.data; // это qrCode: "1753847843"
+        }
+        
+        setDeviceId(extractedDeviceId);
+        stopScan();
+        
+        // Автоматически переходим к выбору тарифа
+        router.push(`/rental/tariff?deviceId=${extractedDeviceId}`);
       }
-      
-      // Если это число (qrCode из API), используем его
-      if (/^\d+$/.test(code.data)) {
-        extractedDeviceId = code.data; // это qrCode: "1753847843"
-      }
-      
-      setDeviceId(extractedDeviceId);
-      stopScan();
-      
-      // Автоматически переходим к выбору тарифа
-      router.push(`/rental/tariff?deviceId=${extractedDeviceId}`);
+    } catch (error) {
+      console.error('QR scan error:', error);
     }
   };
 

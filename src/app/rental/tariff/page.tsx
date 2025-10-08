@@ -27,12 +27,16 @@ export default function TariffPage() {
   const fetchDeviceInfo = async () => {
     try {
       const response = await fetch(`/api/bajie/device?deviceId=${deviceId}`);
-      const data = await response.json();
+      const result = await response.json();
       
-      if (data.data?.code === 0) {
-        setDeviceInfo(data.data.data);
+      console.log('Device info response:', result);
+      
+      // result.data это ответ от Bajie API
+      if (result.data?.code === 0 && result.data?.data) {
+        setDeviceInfo(result.data.data);
       } else {
-        alert("Устройство недоступно");
+        const errorMsg = result.data?.msg || result.error || "Устройство недоступно";
+        alert(errorMsg);
         router.push("/scan");
       }
     } catch (error) {

@@ -55,8 +55,8 @@ export class BajieClient {
     });
 
     // If backend returns generic error (code 500) or non-OK, try cabinetId as a fallback
-    const deviceCode = (deviceRes?.data as BajieDeviceInfoResponse | undefined)?.code;
-    if (!deviceRes.ok || deviceCode === 500) {
+    const deviceCode = deviceRes?.data?.code;
+    if (!deviceRes.ok || deviceCode === 500 || deviceCode === 2004) {
       const byCabinetUrl = `${this.baseUrl}/rent/cabinet/query?cabinetId=${encodeURIComponent(deviceIdOrCabinetId)}`;
       const cabinetRes = await httpRequest<BajieDeviceInfoResponse>(byCabinetUrl, {
         headers: { Authorization: this.authHeader },
