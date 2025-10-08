@@ -37,7 +37,7 @@ export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    const userData = localStorage.getItem("stinger_user");
+    const userData = localStorage.getItem("stiger_user");
     if (userData) {
       setUser(JSON.parse(userData));
     }

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 export default function ProfilePage() {
   const [user, setUser] = useState<{ name?: string; phone?: string; email?: string } | null>(null);
   useEffect(() => {
-    const data = localStorage.getItem("stinger_user");
+    const data = localStorage.getItem("stiger_user");
     if (data) setUser(JSON.parse(data));
   }, []);
 

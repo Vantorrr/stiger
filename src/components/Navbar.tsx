@@ -14,14 +14,14 @@ export default function Navbar() {
   const router = useRouter();
 
   useEffect(() => {
-    const userData = localStorage.getItem("stinger_user");
+    const userData = localStorage.getItem("stiger_user");
     if (userData) {
       setUser(JSON.parse(userData));
     }
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("stinger_user");
+    localStorage.removeItem("stiger_user");
     setUser(null);
     router.push("/");
   };

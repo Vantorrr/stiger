@@ -14,7 +14,7 @@ export default function AuthenticatedLayout({ children }: { children: React.Reac
   const router = useRouter();
 
   useEffect(() => {
-    const userData = localStorage.getItem("stinger_user");
+    const userData = localStorage.getItem("stiger_user");
     if (!userData) {
       router.push("/auth");
       return;

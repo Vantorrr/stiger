@@ -12,7 +12,7 @@ export default function TariffPage() {
   const deviceId = searchParams.get("deviceId");
 
   useEffect(() => {
-    const userData = localStorage.getItem("stinger_user");
+    const userData = localStorage.getItem("stiger_user");
     if (!userData) {
       router.push("/auth");
       return;

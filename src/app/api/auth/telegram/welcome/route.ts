@@ -42,3 +42,4 @@ _Приятного использования!_ ⚡`;
     return NextResponse.json({ success: true });
   }
 }
+

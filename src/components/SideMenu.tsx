@@ -68,7 +68,7 @@ export default function SideMenu({ open, onClose, clientNumber }: { open: boolea
           <button
             className="w-full h-10 rounded-lg bg-red-500 text-white font-semibold hover:bg-red-600"
             onClick={() => {
-              localStorage.removeItem("stinger_user");
+              localStorage.removeItem("stiger_user");
               window.location.href = "/";
             }}
           >
