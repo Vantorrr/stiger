@@ -248,22 +248,62 @@ export default function PaymentPage() {
             </div>
 
             {/* Кнопка оплаты */}
-            <button
-              onClick={handlePayment}
-              disabled={loading || !scriptLoaded}
-              className="w-full h-16 rounded-3xl gradient-bg text-white font-bold text-xl shadow-2xl button-premium disabled:opacity-50 disabled:cursor-not-allowed pulse-glow"
-            >
-              {loading ? (
-                <span className="flex items-center justify-center gap-3">
-                  <span className="animate-spin">⏳</span>
-                  Обработка...
-                </span>
-              ) : (
-                <span className="flex items-center justify-center gap-3">
-                  💳 Оплатить ₽{totalAmount}
-                </span>
-              )}
-            </button>
+            <div className="space-y-3">
+              <button
+                onClick={handlePayment}
+                disabled={loading || !scriptLoaded}
+                className="w-full h-16 rounded-3xl gradient-bg text-white font-bold text-xl shadow-2xl button-premium disabled:opacity-50 disabled:cursor-not-allowed pulse-glow"
+              >
+                {loading ? (
+                  <span className="flex items-center justify-center gap-3">
+                    <span className="animate-spin">⏳</span>
+                    Обработка...
+                  </span>
+                ) : (
+                  <span className="flex items-center justify-center gap-3">
+                    💳 Оплатить ₽{totalAmount}
+                  </span>
+                )}
+              </button>
+              
+              {/* ТЕСТОВАЯ кнопка для проверки выдачи */}
+              <button
+                onClick={async () => {
+                  if (!confirm('⚠️ ТЕСТ: Выдать power bank без оплаты?')) return;
+                  
+                  setLoading(true);
+                  try {
+                    const response = await fetch('/api/rentals/confirm', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        orderId: orderId,
+                        transactionId: 'TEST_' + Date.now(),
+                        skipPayment: true
+                      })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                      alert('✅ Команда отправлена! Проверьте шкаф.');
+                      router.push(`/rental/success?orderId=${orderId}&test=true`);
+                    } else {
+                      alert('❌ Ошибка: ' + (result.error || 'Не удалось'));
+                    }
+                  } catch (error) {
+                    console.error(error);
+                    alert('❌ Ошибка');
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                disabled={loading}
+                className="w-full h-12 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white font-semibold shadow-lg transition-all disabled:opacity-50"
+              >
+                🧪 ТЕСТ: Выдать без оплаты
+              </button>
+            </div>
 
             {/* Информация о безопасности */}
             <div className="mt-6 text-center">
