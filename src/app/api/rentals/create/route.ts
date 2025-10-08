@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
       description: `${selectedTariff.description} - Stiger Power Bank`,
       invoiceId: orderId,
       accountId: userId,
-      requireConfirmation: true, // Двухстадийная оплата
+      email: '', // CloudPayments может требовать email
       jsonData: {
         deviceId,
         shopId,
