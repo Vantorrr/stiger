@@ -76,14 +76,14 @@ export default function PaymentPage() {
 
     const widget = new window.cp.CloudPayments();
     
-    widget.auth({
+    // Используем charge для прямого списания (не auth!)
+    widget.charge({
       publicId: order.paymentData.publicId,
       description: order.paymentData.description,
       amount: order.paymentData.amount,
       currency: order.paymentData.currency,
       invoiceId: order.paymentData.invoiceId,
       accountId: order.paymentData.accountId,
-      requireConfirmation: true,
       data: order.paymentData.jsonData,
       
       // Настройки виджета
@@ -92,11 +92,13 @@ export default function PaymentPage() {
     },
     {
       onSuccess: function(options: any) {
+        console.log('✅ Платеж успешен:', options);
         // Платеж прошел, powerbank должен выехать автоматически через вебхук
         setLoading(false);
-        router.push(`/rental/success?orderId=${orderId}&transactionId=${options.id}`);
+        router.push(`/rental/success?orderId=${orderId}&transactionId=${options.transactionId}`);
       },
       onFail: function(reason: string, options: any) {
+        console.error('❌ Платеж отклонен:', reason, options);
         setLoading(false);
         alert(`Ошибка оплаты: ${reason}`);
       },
