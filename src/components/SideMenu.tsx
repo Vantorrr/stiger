@@ -246,3 +246,60 @@ function SupportIcon() {
 }
 
 
+// Simple document icon for legal pages
+function DocIcon() {
+  return (
+    <div className="w-5 h-5 relative">
+      <svg viewBox="0 0 24 24" fill="none" className="w-full h-full">
+        <path d="M7 3H14L19 8V21C19 21.5523 18.5523 22 18 22H7C6.44772 22 6 21.5523 6 21V4C6 3.44772 6.44772 3 7 3Z" stroke="url(#doc-gradient)" strokeWidth="2" strokeLinejoin="round" />
+        <path d="M14 3V8H19" stroke="url(#doc-gradient)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M9 13H16M9 17H16M9 9H11" stroke="url(#doc-gradient)" strokeWidth="2" strokeLinecap="round" />
+        <defs>
+          <linearGradient id="doc-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#6366F1" />
+            <stop offset="100%" stopColor="#22C55E" />
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+  );
+}
+
+// Shield/privacy icon
+function ShieldIcon() {
+  return (
+    <div className="w-5 h-5 relative">
+      <svg viewBox="0 0 24 24" fill="none" className="w-full h-full">
+        <path d="M12 2L20 6V12C20 16.9706 16.4183 20.9706 12 22C7.58172 20.9706 4 16.9706 4 12V6L12 2Z" stroke="url(#shield-gradient)" strokeWidth="2" strokeLinejoin="round" />
+        <path d="M9.5 12.2L11.2 14L14.5 9.5" stroke="url(#shield-gradient)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <defs>
+          <linearGradient id="shield-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#06B6D4" />
+            <stop offset="100%" stopColor="#3B82F6" />
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+  );
+}
+
+// Building/bank icon for requisites
+function BuildingIcon() {
+  return (
+    <div className="w-5 h-5 relative">
+      <svg viewBox="0 0 24 24" fill="none" className="w-full h-full">
+        <path d="M3 10L12 4L21 10" stroke="url(#building-gradient)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M5 10V20M19 10V20M3 20H21" stroke="url(#building-gradient)" strokeWidth="2" strokeLinecap="round" />
+        <path d="M8 20V14H10V20M14 20V14H16V20" stroke="url(#building-gradient)" strokeWidth="2" strokeLinecap="round" />
+        <defs>
+          <linearGradient id="building-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#F59E0B" />
+            <stop offset="100%" stopColor="#10B981" />
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+  );
+}
+
+
