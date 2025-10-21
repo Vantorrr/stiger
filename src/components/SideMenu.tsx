@@ -62,6 +62,23 @@ export default function SideMenu({ open, onClose, clientNumber }: { open: boolea
             <SupportIcon />
             <span>Поддержка</span>
           </MenuItem>
+          <div className="px-3 pt-3 pb-1 text-[11px] uppercase tracking-wide opacity-60">Документы</div>
+          <MenuItem href="/legal/pricing" onClick={onClose}>
+            <PricingIcon />
+            <span>Стоимость услуг</span>
+          </MenuItem>
+          <MenuItem href="/legal/offer" onClick={onClose}>
+            <DocIcon />
+            <span>Публичная оферта</span>
+          </MenuItem>
+          <MenuItem href="/legal/privacy" onClick={onClose}>
+            <ShieldIcon />
+            <span>Политика конфиденциальности</span>
+          </MenuItem>
+          <MenuItem href="/legal/requisites" onClick={onClose}>
+            <BuildingIcon />
+            <span>Реквизиты</span>
+          </MenuItem>
         </nav>
 
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-black/10 dark:border-white/10 bg-white/60 dark:bg-slate-900/60 backdrop-blur">
