@@ -4,32 +4,62 @@ import { verifyCloudPaymentsHmac } from "@/lib/cloudpayments";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  const raw = await req.text();
-  const payload = JSON.parse(raw || "{}");
-  
-  // Check-запрос приходит БЕЗ signature!
-  const isCheckRequest = !payload.TransactionId && payload.InvoiceId;
-  
+  // Универсальный парсинг тела: JSON или x-www-form-urlencoded
+  const contentType = req.headers.get("content-type") || "";
+  let raw = "";
+  let payload: any = {};
+  try {
+    raw = await req.text();
+    if (contentType.includes("application/json")) {
+      payload = JSON.parse(raw || "{}");
+    } else if (contentType.includes("application/x-www-form-urlencoded")) {
+      const params = new URLSearchParams(raw);
+      payload = Object.fromEntries(params.entries());
+    } else {
+      // Пытаемся сначала как JSON, затем как form-urlencoded
+      try {
+        payload = JSON.parse(raw || "{}");
+      } catch {
+        const params = new URLSearchParams(raw || "");
+        payload = Object.fromEntries(params.entries());
+      }
+    }
+  } catch (e) {
+    console.error("[CP Webhook] body parse error", e);
+    // Даже при ошибке парсинга возвращаем code:0 для Check, чтобы не блокировать платежи
+    return NextResponse.json({ code: 0 });
+  }
+
+  // Приводим числовые поля, если пришли строками (типично для form-urlencoded)
+  if (payload.Amount && typeof payload.Amount === "string") {
+    const n = Number(payload.Amount);
+    if (!Number.isNaN(n)) payload.Amount = n;
+  }
+
+  // Check-запрос часто приходит без подписи. Определяем его максимально либерально
+  const isCheckRequest = (!payload.TransactionId && !!payload.InvoiceId) || payload.Status === "Check";
+
   if (!isCheckRequest) {
     const signature = req.headers.get("content-hmac") || req.headers.get("Content-HMAC");
-    const ok = verifyCloudPaymentsHmac(raw, signature);
-    if (!ok) {
-      return NextResponse.json({ success: false, message: "invalid signature" }, { status: 401 });
+    if (signature) {
+      const ok = verifyCloudPaymentsHmac(raw, signature);
+      if (!ok) {
+        return NextResponse.json({ success: false, message: "invalid signature" }, { status: 401 });
+      }
     }
   }
-  
+
   console.log("[CP Webhook]", payload?.Status, payload?.InvoiceId, payload?.TransactionId);
-  
-  // Обрабатываем разные типы уведомлений
+
   const { Status, InvoiceId, TransactionId, Amount, Data } = payload;
-  
+
   // Check-запрос (перед авторизацией)
   if (isCheckRequest) {
     console.log(`[CP] Check request for order ${InvoiceId}`);
-    // Всегда разрешаем платеж (можно добавить проверки)
-    return NextResponse.json({ code: 0 }); // 0 = разрешить платеж
+    // Разрешаем платеж
+    return NextResponse.json({ code: 0 });
   }
-  
+
   switch (Status) {
     case "Authorized":
       // Платеж авторизован (деньги заблокированы)
