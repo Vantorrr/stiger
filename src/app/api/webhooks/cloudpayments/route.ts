@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyCloudPaymentsHmac } from "@/lib/cloudpayments";
 
 export const dynamic = "force-dynamic";
-export const runtime = "edge";
 
 export async function POST(req: NextRequest) {
   // Универсальный парсинг тела: JSON или x-www-form-urlencoded
