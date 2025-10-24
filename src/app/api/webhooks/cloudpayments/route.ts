@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyCloudPaymentsHmac } from "@/lib/cloudpayments";
 
 export const dynamic = "force-dynamic";
+export const runtime = "edge";
 
 export async function POST(req: NextRequest) {
   // Универсальный парсинг тела: JSON или x-www-form-urlencoded
@@ -105,6 +106,16 @@ export async function POST(req: NextRequest) {
   }
   
   return NextResponse.json({ success: true, code: 0 });
+}
+
+// На всякий случай: поддержим GET-запросы как Check-пинг
+export async function GET(_req: NextRequest) {
+  return NextResponse.json({ code: 0 });
+}
+
+// И HEAD: некоторые клиенты могут стучаться HEAD перед POST
+export async function HEAD(_req: NextRequest) {
+  return NextResponse.json({ code: 0 });
 }
 
 
