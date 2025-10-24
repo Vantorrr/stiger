@@ -23,18 +23,21 @@ export async function POST(req: NextRequest) {
       // Здесь можно сразу инициировать выдачу powerbank
       console.log(`[CP] Payment authorized for order ${InvoiceId}, amount: ${Amount}`);
       
-      // TODO: Вызвать API для подтверждения аренды и выдачи
-      // const confirmResult = await fetch(`${process.env.APP_URL}/api/rentals/confirm`, {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({
-      //     orderId: InvoiceId,
-      //     transactionId: TransactionId,
-      //     deviceId: Data?.deviceId,
-      //     shopId: Data?.shopId,
-      //     slotNum: Data?.slotNum
-      //   })
-      // });
+      try {
+        await fetch(`${process.env.APP_URL}/api/rentals/confirm`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            orderId: InvoiceId,
+            transactionId: TransactionId,
+            deviceId: Data?.deviceId,
+            shopId: Data?.shopId,
+            slotNum: Data?.slotNum
+          })
+        });
+      } catch (e) {
+        console.error("Confirm via webhook failed", e);
+      }
       
       break;
       

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { BajieClient } from "@/lib/bajie";
+import { cpConfirm, cpVoid } from "@/lib/cloudpayments";
 import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -34,7 +35,16 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    // TODO: Проверить статус транзакции в CloudPayments
+    // Проверяем авторизацию платежа и подтверждаем списание (если аккаунт двухстадийный)
+    if (!skipPayment) {
+      const confirmRes = await cpConfirm({ transactionId });
+      if (!confirmRes.ok) {
+        return NextResponse.json({ 
+          error: "Payment confirm failed",
+          details: confirmRes.error || confirmRes.data
+        }, { status: 402 });
+      }
+    }
     // TODO: Проверить, что заказ существует и не обработан
 
     // Создаем аренду в Bajie
@@ -57,7 +67,9 @@ export async function POST(req: NextRequest) {
     
     if (createData.code !== 0) {
       // Отменяем оплату если не удалось создать аренду
-      // TODO: вызвать CloudPayments void для отмены транзакции
+      if (!skipPayment) {
+        await cpVoid({ transactionId }).catch(() => {});
+      }
       return NextResponse.json({ 
         error: "Failed to create rent order",
         details: createData 
@@ -83,8 +95,16 @@ export async function POST(req: NextRequest) {
     console.log('Eject response:', ejectData);
     
     if (ejectData.code !== 0) {
-      // Логируем ошибку, но не отменяем - пользователь может попробовать другой слот
+      // Возврат/отмена платежа при неудачной выдаче
+      if (!skipPayment) {
+        await cpVoid({ transactionId }).catch(() => {});
+      }
       console.error("Eject failed:", ejectData);
+      return NextResponse.json({
+        success: false,
+        error: "Eject failed",
+        details: ejectData
+      }, { status: 400 });
     }
 
     // Сохраняем заказ в базе
@@ -95,10 +115,8 @@ export async function POST(req: NextRequest) {
       orderId,
       tradeNo,
       transactionId,
-      ejected: ejectData.code === 0,
-      message: ejectData.code === 0 
-        ? "PowerBank выдан! Заберите его из открывшегося слота."
-        : "Оплата прошла, но выдача не удалась. Обратитесь в поддержку."
+      ejected: true,
+      message: "PowerBank выдан! Заберите его из открывшегося слота."
     });
 
   } catch (error) {

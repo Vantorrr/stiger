@@ -15,8 +15,8 @@ export default function PaymentPage() {
   const [loading, setLoading] = useState(false);
   
   useEffect(() => {
-    // Загружаем сохраненные карты
-    const cards = JSON.parse(localStorage.getItem("stinger_cards") || "[]");
+    // Загружаем сохраненные карты (единый ключ)
+    const cards = JSON.parse(localStorage.getItem("stiger_cards") || "[]");
     setSavedCards(cards);
   }, []);
 
@@ -33,7 +33,7 @@ export default function PaymentPage() {
     
     // Используем метод auth с суммой 1 рубль для проверки и токенизации карты
     widget.auth({
-      publicId: "pk_2730acd022c1e22194e001a467f28", // TODO: проверить полный ключ
+      publicId: process.env.NEXT_PUBLIC_CLOUDPAYMENTS_PUBLIC_ID,
       description: "Привязка карты к Stiger",
       amount: 1,
       currency: "RUB",
@@ -51,7 +51,7 @@ export default function PaymentPage() {
         };
         
         const updated = [...savedCards, newCard];
-        localStorage.setItem("stinger_cards", JSON.stringify(updated));
+        localStorage.setItem("stiger_cards", JSON.stringify(updated));
         setSavedCards(updated);
         
         setLoading(false);

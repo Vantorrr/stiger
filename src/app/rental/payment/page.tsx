@@ -93,9 +93,21 @@ export default function PaymentPage() {
     {
       onSuccess: function(options: any) {
         console.log('✅ Платеж успешен:', options);
-        // Платеж прошел, powerbank должен выехать автоматически через вебхук
-        setLoading(false);
-        router.push(`/rental/success?orderId=${orderId}&transactionId=${options.transactionId}`);
+        // Тригерим серверный confirm для выдачи (не ждем вебхук)
+        fetch('/api/rentals/confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: orderId,
+            transactionId: options.transactionId
+          })
+        }).then(() => {
+          setLoading(false);
+          router.push(`/rental/success?orderId=${orderId}&transactionId=${options.transactionId}`);
+        }).catch(() => {
+          setLoading(false);
+          router.push(`/rental/success?orderId=${orderId}&transactionId=${options.transactionId}`);
+        });
       },
       onFail: function(reason: string, options: any) {
         console.error('❌ Платеж отклонен:', reason, options);
@@ -194,7 +206,7 @@ export default function PaymentPage() {
               
               {/* Сохраненные способы оплаты */}
               {(() => {
-                const savedCards = JSON.parse(localStorage.getItem("stinger_cards") || "[]");
+                const savedCards = JSON.parse(localStorage.getItem("stiger_cards") || "[]");
                 const savedSBP = localStorage.getItem("stinger_sbp_phone");
                 
                 if (savedCards.length > 0 || savedSBP) {
