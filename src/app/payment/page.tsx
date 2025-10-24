@@ -13,6 +13,7 @@ export default function PaymentPage() {
   const [savedCards, setSavedCards] = useState<Array<{id: string, mask: string, type: string, token?: string}>>([]);
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
+  const publicId = (process.env.NEXT_PUBLIC_CLOUDPAYMENTS_PUBLIC_ID as string) || "";
   
   useEffect(() => {
     // Загружаем сохраненные карты (единый ключ)
@@ -22,7 +23,11 @@ export default function PaymentPage() {
 
   const saveCard = () => {
     console.log("saveCard called", { scriptLoaded, cp: window.cp });
-    
+    if (!publicId) {
+      alert("Платежный ключ не настроен. Установите NEXT_PUBLIC_CLOUDPAYMENTS_PUBLIC_ID и перезапустите деплой.");
+      return;
+    }
+
     if (!scriptLoaded || !window.cp) {
       alert("Платежная система еще не загружена, попробуйте снова");
       return;
@@ -33,7 +38,7 @@ export default function PaymentPage() {
     
     // Используем метод auth с суммой 1 рубль для проверки и токенизации карты
     widget.auth({
-      publicId: process.env.NEXT_PUBLIC_CLOUDPAYMENTS_PUBLIC_ID,
+      publicId,
       description: "Привязка карты к Stiger",
       amount: 1,
       currency: "RUB",
@@ -76,7 +81,7 @@ export default function PaymentPage() {
 
   const deleteCard = (id: string) => {
     const updated = savedCards.filter(card => card.id !== id);
-    localStorage.setItem("stinger_cards", JSON.stringify(updated));
+    localStorage.setItem("stiger_cards", JSON.stringify(updated));
     setSavedCards(updated);
   };
 
