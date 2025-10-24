@@ -5,17 +5,30 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   const raw = await req.text();
-  const signature = req.headers.get("content-hmac") || req.headers.get("Content-HMAC");
-  const ok = verifyCloudPaymentsHmac(raw, signature);
-  if (!ok) {
-    return NextResponse.json({ success: false, message: "invalid signature" }, { status: 401 });
+  const payload = JSON.parse(raw || "{}");
+  
+  // Check-запрос приходит БЕЗ signature!
+  const isCheckRequest = !payload.TransactionId && payload.InvoiceId;
+  
+  if (!isCheckRequest) {
+    const signature = req.headers.get("content-hmac") || req.headers.get("Content-HMAC");
+    const ok = verifyCloudPaymentsHmac(raw, signature);
+    if (!ok) {
+      return NextResponse.json({ success: false, message: "invalid signature" }, { status: 401 });
+    }
   }
   
-  const payload = JSON.parse(raw || "{}");
   console.log("[CP Webhook]", payload?.Status, payload?.InvoiceId, payload?.TransactionId);
   
   // Обрабатываем разные типы уведомлений
   const { Status, InvoiceId, TransactionId, Amount, Data } = payload;
+  
+  // Check-запрос (перед авторизацией)
+  if (isCheckRequest) {
+    console.log(`[CP] Check request for order ${InvoiceId}`);
+    // Всегда разрешаем платеж (можно добавить проверки)
+    return NextResponse.json({ code: 0 }); // 0 = разрешить платеж
+  }
   
   switch (Status) {
     case "Authorized":
