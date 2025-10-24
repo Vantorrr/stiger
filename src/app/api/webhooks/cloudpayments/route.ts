@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyCloudPaymentsHmac } from "@/lib/cloudpayments";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   // Универсальный парсинг тела: JSON или x-www-form-urlencoded
@@ -57,7 +58,13 @@ export async function POST(req: NextRequest) {
   if (isCheckRequest) {
     console.log(`[CP] Check request for order ${InvoiceId}`);
     // Разрешаем платеж
-    return NextResponse.json({ code: 0 });
+    return new NextResponse(JSON.stringify({ code: 0 }), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store, no-cache, must-revalidate",
+      },
+    });
   }
 
   switch (Status) {
@@ -104,17 +111,29 @@ export async function POST(req: NextRequest) {
       break;
   }
   
-  return NextResponse.json({ success: true, code: 0 });
+  return new NextResponse(JSON.stringify({ success: true, code: 0 }), {
+    status: 200,
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store, no-cache, must-revalidate",
+    },
+  });
 }
 
 // На всякий случай: поддержим GET-запросы как Check-пинг
 export async function GET(_req: NextRequest) {
-  return NextResponse.json({ code: 0 });
+  return new NextResponse(JSON.stringify({ code: 0 }), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
 }
 
 // И HEAD: некоторые клиенты могут стучаться HEAD перед POST
 export async function HEAD(_req: NextRequest) {
-  return NextResponse.json({ code: 0 });
+  return new NextResponse(JSON.stringify({ code: 0 }), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
 }
 
 
