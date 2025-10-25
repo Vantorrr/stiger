@@ -68,6 +68,11 @@ export default function PaymentPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ transactionId: options.TransactionId })
         });
+        
+        // Редирект в личный кабинет
+        setTimeout(() => {
+          window.location.href = "/dashboard";
+        }, 1000);
       },
       onFail: (reason: any, options: any) => {
         setLoading(false);

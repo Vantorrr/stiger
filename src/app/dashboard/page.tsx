@@ -10,14 +10,16 @@ interface User {
 
 export default function Dashboard() {
   const [user, setUser] = useState<User | null>(null);
+  const [savedCards, setSavedCards] = useState<Array<{id: string, mask: string, type: string, token?: string}>>([]);
   const router = useRouter();
 
   useEffect(() => {
     const userData = localStorage.getItem("stiger_user");
     if (userData) {
       setUser(JSON.parse(userData));
-      // Для единообразного UX: авторизованных ведём на главную с картой
-      router.replace("/");
+      // Загружаем привязанные карты
+      const cards = JSON.parse(localStorage.getItem("stiger_cards") || "[]");
+      setSavedCards(cards);
     } else {
       router.push("/auth");
     }
@@ -75,6 +77,33 @@ export default function Dashboard() {
             <div className="text-3xl font-bold text-purple-500">0</div>
             <p className="text-sm opacity-70">За всё время</p>
           </div>
+        </div>
+
+        {/* Привязанные карты */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold mb-4">💳 Привязанные карты</h2>
+          {savedCards.length > 0 ? (
+            <div className="grid md:grid-cols-2 gap-4">
+              {savedCards.map((card) => (
+                <div key={card.id} className="glass-effect rounded-2xl p-4 shadow-xl">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-semibold">{card.mask}</div>
+                      <div className="text-sm opacity-70">{card.type}</div>
+                    </div>
+                    <div className="text-green-500">✓</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="glass-effect rounded-2xl p-6 shadow-xl text-center">
+              <p className="text-gray-600 dark:text-gray-300 mb-4">Нет привязанных карт</p>
+              <Link href="/payment" className="inline-flex items-center justify-center h-10 px-6 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold hover:shadow-lg transition-all duration-300">
+                Привязать карту
+              </Link>
+            </div>
+          )}
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
