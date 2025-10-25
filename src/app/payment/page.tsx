@@ -45,9 +45,8 @@ export default function PaymentPage() {
       currency: "RUB",
       requireConfirmation: false, // Автоматическая отмена после проверки
       saveCard: true, // Важно! Сохраняем карту для будущих платежей
-      // Явно задаём возвратные URL, чтобы исключить неверный редирект
-      successUrl: `${origin}/payment/success`,
-      failUrl: `${origin}/payment/fail`,
+      // НЕ передаем URL редиректов - пусть CloudPayments их не использует
+      // successUrl и failUrl намеренно НЕ заданы
     }, {
       onSuccess: (options: any) => {
         console.log("CloudPayments success:", options);
