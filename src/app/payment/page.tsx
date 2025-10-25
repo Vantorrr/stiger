@@ -51,14 +51,24 @@ export default function PaymentPage() {
       onSuccess: (options: any) => {
         console.log("CloudPayments success:", options);
         
+        // Проверяем, что данные есть
+        if (!options) {
+          console.error("No options returned from CloudPayments");
+          alert("Ошибка: не получены данные карты");
+          setLoading(false);
+          return;
+        }
+        
         // Сохраняем токен карты
         const newCard = {
           id: Date.now().toString(),
           mask: options.CardLastFour ? `•••• ${options.CardLastFour}` : "•••• ••••",
           type: options.CardType || "Unknown",
-          token: options.Token, // Токен для будущих платежей
+          token: options.Token || options.RebillId, // Иногда токен приходит как RebillId
           transactionId: options.TransactionId
         };
+        
+        console.log("Saving card:", newCard);
         
         const updated = [...savedCards, newCard];
         localStorage.setItem("stiger_cards", JSON.stringify(updated));
