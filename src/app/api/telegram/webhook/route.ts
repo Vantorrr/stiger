@@ -107,7 +107,7 @@ _Нажмите кнопку ниже для отправки номера_`;
             inline_keyboard: [[
               {
                 text: "🌐 Войти в Stiger",
-                url: `https://stiger.vercel.app/auth/telegram-success?user_id=${user.id}&first_name=${encodeURIComponent(user.first_name)}&username=${user.username || ''}&phone=${encodeURIComponent(contact.phone_number)}`
+                url: `https://stiger.app/auth/telegram-success?user_id=${user.id}&first_name=${encodeURIComponent(user.first_name)}&username=${user.username || ''}&phone=${encodeURIComponent(contact.phone_number)}`
               }
             ]]
           }
