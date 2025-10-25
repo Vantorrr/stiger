@@ -34,6 +34,15 @@ export default function PaymentPage() {
     }
     
     setLoading(true);
+    // Определяем accountId для привязки карты к конкретному пользователю
+    let accountId: string | undefined = undefined;
+    try {
+      const userRaw = localStorage.getItem("stiger_user");
+      if (userRaw) {
+        const user = JSON.parse(userRaw);
+        accountId = user?.id || user?.telegramId?.toString() || user?.phone || undefined;
+      }
+    } catch {}
     const origin = typeof window !== "undefined" ? window.location.origin : "";
     const widget = new window.cp.CloudPayments();
     
@@ -45,6 +54,7 @@ export default function PaymentPage() {
       currency: "RUB",
       requireConfirmation: false, // Автоматическая отмена после проверки
       saveCard: true, // Важно! Сохраняем карту для будущих платежей
+      accountId, // Привязываем карту к аккаунту пользователя
       // Явно указываем пустые строки, чтобы CloudPayments не делал редирект
       successUrl: "",
       failUrl: "",
