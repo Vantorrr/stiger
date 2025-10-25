@@ -34,6 +34,7 @@ export default function PaymentPage() {
     }
     
     setLoading(true);
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
     const widget = new window.cp.CloudPayments();
     
     // Используем метод auth с суммой 1 рубль для проверки и токенизации карты
@@ -44,9 +45,9 @@ export default function PaymentPage() {
       currency: "RUB",
       requireConfirmation: false, // Автоматическая отмена после проверки
       saveCard: true, // Важно! Сохраняем карту для будущих платежей
-      // Отключаем редиректы CloudPayments
-      successUrl: undefined,
-      failUrl: undefined,
+      // Явно задаём возвратные URL, чтобы исключить неверный редирект
+      successUrl: `${origin}/payment/success`,
+      failUrl: `${origin}/payment/fail`,
     }, {
       onSuccess: (options: any) => {
         console.log("CloudPayments success:", options);
