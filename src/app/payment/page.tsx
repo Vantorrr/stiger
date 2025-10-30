@@ -55,9 +55,9 @@ export default function PaymentPage() {
       requireConfirmation: false, // Автоматическая отмена после проверки
       saveCard: true, // Важно! Сохраняем карту для будущих платежей
       accountId, // Привязываем карту к аккаунту пользователя
-      // Явно указываем пустые строки, чтобы CloudPayments не делал редирект
-      successUrl: "",
-      failUrl: "",
+      // Явно указываем абсолютные урлы, чтобы избежать некорректного редиректа
+      successUrl: `${origin}/payment/success`,
+      failUrl: `${origin}/payment/fail`,
     }, {
       onSuccess: (options: any) => {
         console.log("CloudPayments success:", options);
@@ -95,10 +95,7 @@ export default function PaymentPage() {
           body: JSON.stringify({ transactionId: options.TransactionId })
         });
         
-        // Редирект в личный кабинет
-        setTimeout(() => {
-          window.location.href = "/dashboard";
-        }, 1000);
+        // Редирект выполнит сам CloudPayments на successUrl
       },
       onFail: (reason: any, options: any) => {
         setLoading(false);

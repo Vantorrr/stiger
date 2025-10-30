@@ -14,3 +14,4 @@ export const config = {
     '/api/webhooks/cloudpayments/:path*'
   ]
 };
+
