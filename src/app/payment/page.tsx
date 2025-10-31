@@ -54,7 +54,13 @@ export default function PaymentPage() {
       requireConfirmation: false, // Автоматическая отмена после проверки
       saveCard: true, // Важно! Сохраняем карту для будущих платежей
       accountId, // Привязываем карту к аккаунту пользователя
-      // НЕ указываем successUrl/failUrl — обрабатываем всё в onSuccess/onFail
+      data: {
+        cloudPayments: {
+          // Явно отключаем любые редиректы
+          redirectOnSuccess: false,
+          redirectOnFail: false
+        }
+      }
     }, {
       onSuccess: (options: any) => {
         console.log("CloudPayments success:", options);
