@@ -43,7 +43,6 @@ export default function PaymentPage() {
         accountId = user?.id || user?.telegramId?.toString() || user?.phone || undefined;
       }
     } catch {}
-    const origin = typeof window !== "undefined" ? window.location.origin : "";
     const widget = new window.cp.CloudPayments();
     
     // Используем метод auth с суммой 1 рубль для проверки и токенизации карты
@@ -55,9 +54,6 @@ export default function PaymentPage() {
       requireConfirmation: false, // Автоматическая отмена после проверки
       saveCard: true, // Важно! Сохраняем карту для будущих платежей
       accountId, // Привязываем карту к аккаунту пользователя
-      // Явно указываем абсолютные урлы, чтобы избежать некорректного редиректа
-      successUrl: `${origin}/payment/success`,
-      failUrl: `${origin}/payment/fail`,
     }, {
       onSuccess: (options: any) => {
         console.log("CloudPayments success:", options);
@@ -95,7 +91,10 @@ export default function PaymentPage() {
           body: JSON.stringify({ transactionId: options.TransactionId })
         });
         
-        // Редирект выполнит сам CloudPayments на successUrl
+        // Редирект в личный кабинет
+        setTimeout(() => {
+          window.location.href = "/dashboard";
+        }, 1500);
       },
       onFail: (reason: any, options: any) => {
         setLoading(false);
