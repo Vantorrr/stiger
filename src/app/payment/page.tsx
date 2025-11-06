@@ -247,6 +247,7 @@ export default function PaymentPage() {
     const origin = window.location.origin;
 
     console.log(`[Payment] Binding card for accountId: ${id}`);
+    console.log(`[Payment] User data:`, JSON.parse(localStorage.getItem("stiger_user") || "{}"));
     
     widget.auth({
       publicId,
@@ -254,8 +255,8 @@ export default function PaymentPage() {
       amount: 1,
       currency: "RUB",
       requireConfirmation: false,
-      saveCard: true,
-      accountId: id, // Обязательно передаём accountId для привязки карты к пользователю
+      saveCard: true, // ВАЖНО: это сохраняет карту в CloudPayments
+      accountId: id, // ВАЖНО: accountId должен быть одинаковым при привязке и запросе списка
       paymentMethod: 'card',
       // НЕ передаём successUrl/failUrl - они вызывают редирект на [object Object]
       // Используем только onSuccess callback
@@ -300,18 +301,28 @@ export default function PaymentPage() {
 
               const cardsCount = data?.cards?.length || 0;
               console.log(`[Payment] Cards found: ${cardsCount}`, data);
+              console.log(`[Payment] AccountId used for check: ${id}`);
+              console.log(`[Payment] Full API response:`, JSON.stringify(data, null, 2));
               
               // Обновляем состояние
               if (data?.success && data?.cards) {
-                setSavedCards(normalizeCards(data.cards));
+                const normalized = normalizeCards(data.cards);
+                console.log(`[Payment] Normalized cards:`, normalized);
+                setSavedCards(normalized);
               }
               
               // Если карта появилась или это последняя попытка - редирект
               if (cardsCount > 0 || attempt === maxAttempts - 1) {
-                console.log("[Payment] Card found or last attempt, redirecting to /payment/success");
+                if (cardsCount > 0) {
+                  console.log(`[Payment] ✅ Card found! Redirecting to /payment/success`);
+                } else {
+                  console.log(`[Payment] ⚠️ No cards found after ${maxAttempts} attempts. AccountId: ${id}`);
+                  console.log(`[Payment] ⚠️ Check CloudPayments dashboard for accountId: ${id}`);
+                }
                 window.location.href = "/payment/success";
               } else {
                 // Продолжаем проверку
+                console.log(`[Payment] No cards yet, continuing check...`);
                 checkCardSaved(attempt + 1);
               }
             } catch (e) {

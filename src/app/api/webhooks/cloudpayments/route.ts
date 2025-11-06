@@ -100,6 +100,18 @@ export async function POST(req: NextRequest) {
       
       if (Amount === 1 && payload.Description?.includes("Привязка карты")) {
         console.log(`[CP] Card binding authorized for account ${payload.AccountId}`);
+        console.log(`[CP] Card binding transaction: ${TransactionId}, AccountId: ${payload.AccountId}`);
+        // Карта должна быть сохранена автоматически CloudPayments при saveCard: true
+        // Проверяем через несколько секунд, что карта появилась
+        setTimeout(async () => {
+          try {
+            const { cpListCards } = await import("@/lib/cloudpayments");
+            const cardsResult = await cpListCards(payload.AccountId || "");
+            console.log(`[CP] Card binding check: accountId=${payload.AccountId}, cards found=${cardsResult.data?.Model?.length || 0}`);
+          } catch (e) {
+            console.error("[CP] Failed to check cards after binding:", e);
+          }
+        }, 5000);
         break;
       }
       
