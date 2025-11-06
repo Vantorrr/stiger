@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+  const decoded = decodeURIComponent(pathname);
 
-  if (pathname === '/[object Object]' || pathname === '/%5Bobject%20Object%5D') {
+  // Любой заход на путь, содержащий "[object Object]" → на /payment/success
+  if (decoded.includes('[object Object]')) {
     const url = request.nextUrl.clone();
     url.pathname = '/payment/success';
+    url.search = '';
     return NextResponse.redirect(url);
   }
 

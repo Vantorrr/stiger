@@ -34,6 +34,9 @@ interface CloudPaymentsAuthParams {
   requireConfirmation?: boolean;
   saveCard?: boolean;
   accountId?: string;
+  successUrl?: string;
+  failUrl?: string;
+  paymentMethod?: 'card' | 'applepay' | 'googlepay' | 'tinkoff' | 'qiwi' | 'yandex' | string;
 }
 
 interface CloudPaymentsWidget {
@@ -202,6 +205,7 @@ export default function PaymentPage() {
       accountId: id,
       successUrl: `${origin}/payment/success`,
       failUrl: `${origin}/payment/fail`,
+      paymentMethod: 'card',
     }, {
       onSuccess: async (options: CloudPaymentsSuccessPayload) => {
         console.log("CloudPayments success", options);
