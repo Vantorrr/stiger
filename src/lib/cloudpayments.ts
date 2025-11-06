@@ -117,6 +117,7 @@ export async function cpListCards(accountId: string): Promise<{ ok: boolean; sta
       }),
     });
 
+    console.log(`[CP] cards/list request: accountId=${accountId}`);
     console.log(`[CP] cards/list status: ${res.status} for accountId: ${accountId}`);
 
     // Парсим ответ
@@ -138,7 +139,10 @@ export async function cpListCards(accountId: string): Promise<{ ok: boolean; sta
 
     const ok = res.ok && data?.Success !== false;
 
-    console.log(`[CP] cards/list: ok=${ok}, status=${res.status}, error=${errorMessage || "none"}`);
+    console.log(`[CP] cards/list: ok=${ok}, status=${res.status}, error=${errorMessage || "none"}, cards count=${data?.Model?.length || 0}`);
+    if (data?.Model && data.Model.length > 0) {
+      console.log(`[CP] cards/list: cards found:`, data.Model.map(c => ({ LastFour: c.LastFour, Type: c.Type, PaymentSystem: c.PaymentSystem })));
+    }
 
     return {
       ok,

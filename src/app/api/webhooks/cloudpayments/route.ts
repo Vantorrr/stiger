@@ -101,17 +101,32 @@ export async function POST(req: NextRequest) {
       if (Amount === 1 && payload.Description?.includes("Привязка карты")) {
         console.log(`[CP] Card binding authorized for account ${payload.AccountId}`);
         console.log(`[CP] Card binding transaction: ${TransactionId}, AccountId: ${payload.AccountId}`);
+        console.log(`[CP] Card binding - CardId: ${payload.CardId}, CardLastFour: ${payload.CardLastFour}`);
+        
         // Карта должна быть сохранена автоматически CloudPayments при saveCard: true
         // Проверяем через несколько секунд, что карта появилась
-        setTimeout(async () => {
-          try {
-            const { cpListCards } = await import("@/lib/cloudpayments");
-            const cardsResult = await cpListCards(payload.AccountId || "");
-            console.log(`[CP] Card binding check: accountId=${payload.AccountId}, cards found=${cardsResult.data?.Model?.length || 0}`);
-          } catch (e) {
-            console.error("[CP] Failed to check cards after binding:", e);
-          }
-        }, 5000);
+        // Делаем несколько попыток с увеличивающейся задержкой
+        const checkDelays = [3000, 5000, 7000, 10000, 15000];
+        checkDelays.forEach((delay, index) => {
+          setTimeout(async () => {
+            try {
+              const { cpListCards } = await import("@/lib/cloudpayments");
+              const accountId = payload.AccountId || "";
+              const cardsResult = await cpListCards(accountId);
+              const cardsCount = cardsResult.data?.Model?.length || 0;
+              console.log(`[CP] Card binding check #${index + 1} (after ${delay}ms): accountId=${accountId}, cards found=${cardsCount}`);
+              
+              if (cardsCount > 0) {
+                console.log(`[CP] ✅ Card successfully saved! Cards:`, cardsResult.data?.Model);
+              } else if (index === checkDelays.length - 1) {
+                console.error(`[CP] ❌ Card NOT saved after ${checkDelays.length} attempts. AccountId: ${accountId}`);
+                console.error(`[CP] ❌ Check CloudPayments dashboard: https://merchant.cloudpayments.ru/`);
+              }
+            } catch (e) {
+              console.error(`[CP] Failed to check cards after binding (attempt #${index + 1}):`, e);
+            }
+          }, delay);
+        });
         break;
       }
       
