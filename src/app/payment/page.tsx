@@ -1,5 +1,8 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 import AuthenticatedLayout from "@/components/AuthenticatedLayout";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Script from "next/script";
