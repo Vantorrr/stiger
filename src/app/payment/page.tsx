@@ -212,24 +212,19 @@ export default function PaymentPage() {
       onSuccess: async (options: CloudPaymentsSuccessPayload) => {
         console.log("CloudPayments success", options);
         setLoading(false);
-        alert("Карта успешно привязана!");
 
-        try {
-          await fetch("/api/cloudpayments/refund", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ transactionId: options?.TransactionId || options?.transactionId }),
-          });
-        } catch (error) {
-          console.warn("Refund request failed", error);
-        }
+        // Редирект сразу, без alert и таймаута
+        // Виджет может закрыться и сделать свой редирект, поэтому делаем наш сразу
+        window.location.href = "/payment/success";
 
-        await fetchCards(id);
-        
-        // Редирект вручную после успешной привязки
-        setTimeout(() => {
-          window.location.href = "/payment/success";
-        }, 1000);
+        // Остальные действия делаем в фоне (не ждём)
+        fetch("/api/cloudpayments/refund", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ transactionId: options?.TransactionId || options?.transactionId }),
+        }).catch(() => {});
+
+        fetchCards(id).catch(() => {});
       },
       onFail: (reason: string, data: unknown) => {
         console.error("CloudPayments fail", reason, data);
@@ -238,6 +233,11 @@ export default function PaymentPage() {
       },
       onComplete: () => {
         setLoading(false);
+        // Перехватываем редирект виджета и заменяем на наш
+        // Если виджет пытается сделать редирект, перехватываем его
+        if (window.location.pathname !== "/payment" && window.location.pathname !== "/payment/success") {
+          window.location.href = "/payment/success";
+        }
       }
     });
   }, [accountId, fetchCards, publicId, scriptLoaded]);
