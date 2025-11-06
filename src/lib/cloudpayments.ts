@@ -117,8 +117,11 @@ export async function cpListCards(accountId: string): Promise<{ ok: boolean; sta
       }),
     });
 
+    console.log(`[CP] cards/list status: ${res.status} for accountId: ${accountId}`);
+
     // Если у пользователя нет карт, CloudPayments может вернуть 404
     if (res.status === 404) {
+      console.log(`[CP] cards/list: 404 - no cards for accountId: ${accountId}, returning empty list`);
       return {
         ok: true,
         status: 404,
@@ -130,6 +133,8 @@ export async function cpListCards(accountId: string): Promise<{ ok: boolean; sta
     const ok = res.ok && data?.Success !== false;
     const errorMessage = typeof data?.Message === "string" ? data.Message : typeof data?.message === "string" ? data.message : undefined;
 
+    console.log(`[CP] cards/list: ok=${ok}, status=${res.status}, error=${errorMessage || "none"}`);
+
     return {
       ok,
       status: res.status,
@@ -137,6 +142,7 @@ export async function cpListCards(accountId: string): Promise<{ ok: boolean; sta
       error: ok ? undefined : errorMessage || "cards list failed",
     };
   } catch (e) {
+    console.error(`[CP] cards/list error:`, e);
     return {
       ok: false,
       status: 500,
