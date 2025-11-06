@@ -50,7 +50,7 @@ function getBasicAuthHeader(): Record<string, string> {
   return { Authorization: `Basic ${token}` };
 }
 
-export async function cpConfirm(params: { transactionId: string; amount?: number }): Promise<{ ok: boolean; data?: Record<string, unknown>; status: number; error?: string }> {
+export async function cpConfirm(params: { transactionId: string }): Promise<{ ok: boolean; data?: Record<string, unknown>; status: number; error?: string }> {
   try {
     const res = await fetch(`${API_URL}/payments/confirm`, {
       method: "POST",
@@ -60,10 +60,9 @@ export async function cpConfirm(params: { transactionId: string; amount?: number
       },
       body: JSON.stringify({
         TransactionId: params.transactionId,
-        ...(params.amount ? { Amount: params.amount } : {}),
       }),
-      // CloudPayments API expects basic auth over HTTPS
     });
+
     const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
     const messageField = data as { Message?: unknown };
     const lowerMessageField = data as { message?: unknown };
@@ -72,6 +71,7 @@ export async function cpConfirm(params: { transactionId: string; amount?: number
       : typeof lowerMessageField.message === "string"
         ? lowerMessageField.message
         : undefined;
+
     return { ok: res.ok, data, status: res.status, error: res.ok ? undefined : errorMessage };
   } catch (e) {
     return { ok: false, status: 500, error: e instanceof Error ? e.message : "confirm failed" };
@@ -90,6 +90,7 @@ export async function cpVoid(params: { transactionId: string }): Promise<{ ok: b
         TransactionId: params.transactionId,
       }),
     });
+
     const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
     const messageField = data as { Message?: unknown };
     const lowerMessageField = data as { message?: unknown };
@@ -98,6 +99,7 @@ export async function cpVoid(params: { transactionId: string }): Promise<{ ok: b
       : typeof lowerMessageField.message === "string"
         ? lowerMessageField.message
         : undefined;
+
     return { ok: res.ok, data, status: res.status, error: res.ok ? undefined : errorMessage };
   } catch (e) {
     return { ok: false, status: 500, error: e instanceof Error ? e.message : "void failed" };
@@ -195,32 +197,20 @@ export async function cpUnbindCard(accountId: string, token: string): Promise<{ 
     });
 
     const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-    const successField = data as { Success?: unknown };
     const messageField = data as { Message?: unknown };
     const lowerMessageField = data as { message?: unknown };
-    const ok = res.ok && successField.Success !== false;
     const errorMessage = typeof messageField.Message === "string"
       ? messageField.Message
       : typeof lowerMessageField.message === "string"
         ? lowerMessageField.message
         : undefined;
 
-    return {
-      ok,
-      status: res.status,
-      data,
-      error: ok ? undefined : errorMessage || "card unbind failed",
-    };
+    return { ok: res.ok, data, status: res.status, error: res.ok ? undefined : errorMessage };
   } catch (e) {
-    return {
-      ok: false,
-      status: 500,
-      error: e instanceof Error ? e.message : "card unbind failed",
-    };
+    return { ok: false, status: 500, error: e instanceof Error ? e.message : "unbind card failed" };
   }
 }
 
-// Списание средств с привязанной карты по токену
 export async function cpChargeToken(params: {
   token: string;
   amount: number;
