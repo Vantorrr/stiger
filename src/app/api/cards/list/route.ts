@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cpListCards } from "@/lib/cloudpayments";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -12,8 +12,6 @@ export async function POST(req: NextRequest) {
     console.log(`[API] ========== CARDS/LIST REQUEST ==========`);
     console.log(`[API] Request body:`, JSON.stringify(body, null, 2));
     console.log(`[API] accountId: ${accountId}`);
-    console.log(`[API] accountId type: ${typeof accountId}`);
-    console.log(`[API] accountId length: ${accountId?.length || 0}`);
     console.log(`[API] ========================================`);
 
     if (!accountId) {
@@ -21,40 +19,36 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "accountId is required" }, { status: 400 });
     }
 
-    const result = await cpListCards(accountId);
+    // ВАЖНО: CloudPayments НЕ имеет API метода cards/list
+    // Получаем список карт из нашей базы данных
+    const savedCards = await prisma.savedCard.findMany({
+      where: { accountId },
+      orderBy: { createdAt: "desc" },
+    });
 
     console.log(`[API] ========== CARDS/LIST RESULT ==========`);
     console.log(`[API] accountId used: ${accountId}`);
-    console.log(`[API] result.ok: ${result.ok}`);
-    console.log(`[API] result.status: ${result.status}`);
-    console.log(`[API] result.error: ${result.error || "none"}`);
-    console.log(`[API] cards count: ${result.data?.Model?.length || 0}`);
-    if (result.data?.Model && result.data.Model.length > 0) {
-      console.log(`[API] cards:`, JSON.stringify(result.data.Model, null, 2));
+    console.log(`[API] cards count: ${savedCards.length}`);
+    if (savedCards.length > 0) {
+      console.log(`[API] cards:`, savedCards.map(c => ({ token: c.token, lastFour: c.cardLastFour, type: c.cardType })));
     }
     console.log(`[API] ========================================`);
 
-    // Если 404 от CloudPayments - это нормально (нет карт), возвращаем пустой список
-    // Проверяем и status, и ok, потому что cpListCards уже обрабатывает 404
-    if (result.status === 404 || (result.ok && result.data?.Model === undefined)) {
-      console.log(`[API] cards/list: 404 or empty, returning empty list`);
-      return NextResponse.json({
-        success: true,
-        cards: [],
-      });
-    }
+    // Преобразуем в формат, ожидаемый клиентом
+    const cards = savedCards.map(card => ({
+      Token: card.token,
+      LastFour: card.cardLastFour,
+      FirstSix: card.cardFirstSix,
+      Type: card.cardType,
+      PaymentSystem: card.cardType,
+      ExpDate: card.cardExpDate,
+      Issuer: card.issuer,
+    }));
 
-    // Если ok=true, возвращаем данные
-    if (result.ok && result.data?.Model) {
-      return NextResponse.json({
-        success: true,
-        cards: result.data.Model,
-      });
-    }
-
-    // Если ok=false, возвращаем ошибку
-    console.error(`[API] cards/list failed: ${result.error}`);
-    return NextResponse.json({ error: result.error || "CloudPayments cards list failed" }, { status: 502 });
+    return NextResponse.json({
+      success: true,
+      cards,
+    });
   } catch (e) {
     console.error("[API] cards/list error", e);
     return NextResponse.json({ error: "Unexpected error" }, { status: 500 });

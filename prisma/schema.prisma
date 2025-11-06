@@ -22,6 +22,7 @@ model User {
   updatedAt   DateTime @updatedAt
 
   orders      RentalOrder[]
+  savedCards  SavedCard[]
 
   @@index([telegramId])
   @@index([phone])
@@ -79,4 +80,25 @@ model Transaction {
   @@index([accountId])
   @@index([orderId])
   @@index([status])
+}
+
+model SavedCard {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  accountId     String   // accountId пользователя (telegram_XXX или phone)
+  token         String   @unique // Токен карты из CloudPayments
+  cardLastFour  String   // Последние 4 цифры карты
+  cardFirstSix  String?  // Первые 6 цифр карты
+  cardType      String?  // Тип карты (MIR, Visa, MasterCard)
+  cardExpDate   String?  // Срок действия карты (MM/YY)
+  issuer        String?  // Банк-эмитент
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+  @@index([accountId])
+  @@index([token])
 }

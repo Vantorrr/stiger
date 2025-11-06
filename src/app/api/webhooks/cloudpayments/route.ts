@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyCloudPaymentsHmac } from "@/lib/cloudpayments";
+import { prisma } from "@/lib/prisma";
 
 type CloudPaymentsWebhookPayload = {
   Status?: string;
@@ -12,6 +13,8 @@ type CloudPaymentsWebhookPayload = {
   CardLastFour?: string;
   CardFirstSix?: string;
   CardType?: string;
+  CardExpDate?: string;
+  Issuer?: string;
   Token?: string; // Токен карты из вебхука
   Data?: Record<string, unknown> | string | null;
   [key: string]: unknown;
@@ -129,39 +132,67 @@ export async function POST(req: NextRequest) {
         // CloudPayments должен сохранить карту автоматически при saveCard: true
         // Если карта не сохранилась, возможно проблема в настройках CloudPayments
         
-        // КРИТИЧЕСКАЯ ПРОБЛЕМА: CloudPayments НЕ сохраняет карту автоматически при saveCard: true
-        // Это известная проблема CloudPayments - карта должна сохраняться автоматически, но не сохраняется
-        // Решение: нужно использовать другой подход или обратиться в поддержку CloudPayments
+        // ВАЖНО: CloudPayments НЕ имеет API метода cards/list для получения списка карт
+        // Решение: сохраняем Token из вебхука в нашу базу данных
+        // Используем сохраненные токены для последующих платежей через cpChargeToken
         
-        // Карта должна быть сохранена автоматически CloudPayments при saveCard: true
-        // Проверяем через несколько секунд, что карта появилась
-        // Делаем несколько попыток с увеличивающейся задержкой
-        const checkDelays = [3000, 5000, 7000, 10000, 15000, 20000, 30000];
-        checkDelays.forEach((delay, index) => {
-          setTimeout(async () => {
-            try {
-              const { cpListCards } = await import("@/lib/cloudpayments");
-              const cardsResult = await cpListCards(accountId);
-              const cardsCount = cardsResult.data?.Model?.length || 0;
-              console.log(`[CP] Card binding check #${index + 1} (after ${delay}ms): accountId=${accountId}, cards found=${cardsCount}`);
-              
-              if (cardsCount > 0) {
-                console.log(`[CP] ✅ Card successfully saved! Cards:`, JSON.stringify(cardsResult.data?.Model, null, 2));
-              } else if (index === checkDelays.length - 1) {
-                console.error(`[CP] ❌ Card NOT saved after ${checkDelays.length} attempts. AccountId: ${accountId}`);
-                console.error(`[CP] ❌ TransactionId: ${TransactionId}`);
-                console.error(`[CP] ❌ CardId from webhook: ${cardId}`);
-                console.error(`[CP] ❌ Check CloudPayments dashboard: https://merchant.cloudpayments.ru/`);
-                console.error(`[CP] ❌ Possible reasons:`);
-                console.error(`[CP] ❌ 1. saveCard: true not working - check CloudPayments settings`);
-                console.error(`[CP] ❌ 2. AccountId mismatch - check if accountId is the same in widget.auth() and cpListCards()`);
-                console.error(`[CP] ❌ 3. Card not saved in CloudPayments - check merchant dashboard`);
-              }
-            } catch (e) {
-              console.error(`[CP] Failed to check cards after binding (attempt #${index + 1}):`, e);
+        if (token) {
+          try {
+            // Находим или создаем пользователя по accountId
+            let user;
+            if (accountId.startsWith("telegram_")) {
+              const telegramId = parseInt(accountId.replace("telegram_", ""));
+              user = await prisma.user.upsert({
+                where: { telegramId },
+                update: {},
+                create: {
+                  telegramId,
+                  firstName: "User",
+                },
+              });
+            } else {
+              // Пытаемся найти по phone или создать нового
+              user = await prisma.user.upsert({
+                where: { phone: accountId },
+                update: {},
+                create: {
+                  phone: accountId,
+                  firstName: "User",
+                },
+              });
             }
-          }, delay);
-        });
+            
+            // Сохраняем карту в базу данных
+            await prisma.savedCard.upsert({
+              where: { token },
+              update: {
+                cardLastFour,
+                cardFirstSix: cardFirstSix || undefined,
+                cardType: cardType || undefined,
+                cardExpDate: cardExpDate || undefined,
+                issuer: issuer || undefined,
+                accountId,
+                updatedAt: new Date(),
+              },
+              create: {
+                userId: user.id,
+                accountId,
+                token,
+                cardLastFour,
+                cardFirstSix: cardFirstSix || undefined,
+                cardType: cardType || undefined,
+                cardExpDate: cardExpDate || undefined,
+                issuer: issuer || undefined,
+              },
+            });
+            
+            console.log(`[CP] ✅ Card saved to database: token=${token}, accountId=${accountId}, lastFour=${cardLastFour}`);
+          } catch (e) {
+            console.error(`[CP] ❌ Failed to save card to database:`, e);
+          }
+        } else {
+          console.error(`[CP] ❌ No token in webhook payload for card binding`);
+        }
         break;
       }
       

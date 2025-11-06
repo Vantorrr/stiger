@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { BajieClient } from "@/lib/bajie";
-import { cpConfirm, cpVoid, cpListCards } from "@/lib/cloudpayments";
+import { cpConfirm, cpVoid } from "@/lib/cloudpayments";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 
@@ -38,10 +38,11 @@ export async function POST(req: NextRequest) {
 
     // Проверяем наличие привязанной карты перед выдачей power bank
     if (!skipPayment && accountId) {
-      const cardsResult = await cpListCards(accountId);
-      const hasCards = cardsResult.ok && cardsResult.data?.Model && cardsResult.data.Model.length > 0;
+      const savedCards = await prisma.savedCard.findMany({
+        where: { accountId },
+      });
       
-      if (!hasCards) {
+      if (savedCards.length === 0) {
         console.log(`[Rental Confirm] No cards found for account ${accountId}, canceling payment`);
         // Отменяем платеж, если карта не привязана
         await cpVoid({ transactionId }).catch(() => {});

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cpChargeToken, cpListCards } from "@/lib/cloudpayments";
+import { cpChargeToken } from "@/lib/cloudpayments";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -78,9 +78,13 @@ export async function POST(req: NextRequest) {
           ? `telegram_${rentalOrder.user.telegramId}` 
           : rentalOrder.user.phone || rentalOrder.userId;
 
-        // Получаем список карт пользователя
-        const cardsResult = await cpListCards(accountId);
-        if (!cardsResult.ok || !cardsResult.data?.Model || cardsResult.data.Model.length === 0) {
+        // Получаем список карт пользователя из базы данных
+        const savedCards = await prisma.savedCard.findMany({
+          where: { accountId },
+          orderBy: { createdAt: "desc" },
+        });
+
+        if (savedCards.length === 0) {
           console.error(`[Bajie] No cards found for account ${accountId}`);
           // Обновляем статус заказа на completed без списания
           await prisma.rentalOrder.update({
@@ -94,8 +98,8 @@ export async function POST(req: NextRequest) {
         }
 
         // Берем первую привязанную карту
-        const card = cardsResult.data.Model[0];
-        if (!card.Token) {
+        const card = savedCards[0];
+        if (!card.token) {
           console.error("[Bajie] Card token not found");
           break;
         }
@@ -109,7 +113,7 @@ export async function POST(req: NextRequest) {
         
         // Списываем с карты (в копейках)
         const chargeResult = await cpChargeToken({
-          token: card.Token,
+          token: card.token,
           amount: tariffCost * 100, // В копейках
           currency: "RUB",
           accountId: accountId,
@@ -137,8 +141,8 @@ export async function POST(req: NextRequest) {
               currency: "RUB",
               status: "completed",
               description: `Списание тарифа за аренду power bank`,
-              cardToken: card.Token,
-              cardLastFour: card.LastFour || chargeData.Model?.CardLastFour,
+              cardToken: card.token,
+              cardLastFour: card.cardLastFour || chargeData.Model?.CardLastFour,
             },
           });
 
