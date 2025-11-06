@@ -190,6 +190,7 @@ export default function PaymentPage() {
     setLoading(true);
 
     const widget = new cp.CloudPayments();
+    const origin = window.location.origin;
 
     widget.auth({
       publicId,
@@ -199,6 +200,8 @@ export default function PaymentPage() {
       requireConfirmation: false,
       saveCard: true,
       accountId: id,
+      successUrl: `${origin}/payment/success`,
+      failUrl: `${origin}/payment/fail`,
     }, {
       onSuccess: async (options: CloudPaymentsSuccessPayload) => {
         console.log("CloudPayments success", options);
