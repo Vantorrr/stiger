@@ -205,9 +205,9 @@ export default function PaymentPage() {
       requireConfirmation: false,
       saveCard: true,
       accountId: id,
-      successUrl: `${origin}/payment/success`,
-      failUrl: `${origin}/payment/fail`,
       paymentMethod: 'card',
+      // НЕ передаём successUrl/failUrl - они вызывают редирект на [object Object]
+      // Используем только onSuccess callback
     }, {
       onSuccess: async (options: CloudPaymentsSuccessPayload) => {
         console.log("CloudPayments success", options);
@@ -225,6 +225,11 @@ export default function PaymentPage() {
         }
 
         await fetchCards(id);
+        
+        // Редирект вручную после успешной привязки
+        setTimeout(() => {
+          window.location.href = "/payment/success";
+        }, 1000);
       },
       onFail: (reason: string, data: unknown) => {
         console.error("CloudPayments fail", reason, data);
