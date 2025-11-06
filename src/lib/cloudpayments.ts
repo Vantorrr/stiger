@@ -22,6 +22,17 @@ export function cloudPaymentsSecret(): string {
   return key;
 }
 
+export interface CloudPaymentsSavedCard {
+  FirstSix?: string;
+  LastFour?: string;
+  ExpDate?: string;
+  Token?: string;
+  Type?: string;
+  Issuer?: string;
+  IssuerBankCountry?: string;
+  PaymentSystem?: string;
+}
+
 export function verifyCloudPaymentsHmac(rawBody: string, headerValue?: string | null): boolean {
   if (!headerValue) return false;
   const secret = cloudPaymentsSecret();
@@ -39,7 +50,7 @@ function getBasicAuthHeader(): Record<string, string> {
   return { Authorization: `Basic ${token}` };
 }
 
-export async function cpConfirm(params: { transactionId: string; amount?: number }): Promise<{ ok: boolean; data?: any; status: number; error?: string }> {
+export async function cpConfirm(params: { transactionId: string; amount?: number }): Promise<{ ok: boolean; data?: Record<string, unknown>; status: number; error?: string }> {
   try {
     const res = await fetch(`${API_URL}/payments/confirm`, {
       method: "POST",
@@ -53,14 +64,21 @@ export async function cpConfirm(params: { transactionId: string; amount?: number
       }),
       // CloudPayments API expects basic auth over HTTPS
     });
-    const data = await res.json().catch(() => ({}));
-    return { ok: res.ok, data, status: res.status, error: res.ok ? undefined : data?.Message || data?.message };
+    const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    const messageField = data as { Message?: unknown };
+    const lowerMessageField = data as { message?: unknown };
+    const errorMessage = typeof messageField.Message === "string"
+      ? messageField.Message
+      : typeof lowerMessageField.message === "string"
+        ? lowerMessageField.message
+        : undefined;
+    return { ok: res.ok, data, status: res.status, error: res.ok ? undefined : errorMessage };
   } catch (e) {
     return { ok: false, status: 500, error: e instanceof Error ? e.message : "confirm failed" };
   }
 }
 
-export async function cpVoid(params: { transactionId: string }): Promise<{ ok: boolean; data?: any; status: number; error?: string }> {
+export async function cpVoid(params: { transactionId: string }): Promise<{ ok: boolean; data?: Record<string, unknown>; status: number; error?: string }> {
   try {
     const res = await fetch(`${API_URL}/payments/void`, {
       method: "POST",
@@ -72,10 +90,89 @@ export async function cpVoid(params: { transactionId: string }): Promise<{ ok: b
         TransactionId: params.transactionId,
       }),
     });
-    const data = await res.json().catch(() => ({}));
-    return { ok: res.ok, data, status: res.status, error: res.ok ? undefined : data?.Message || data?.message };
+    const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    const messageField = data as { Message?: unknown };
+    const lowerMessageField = data as { message?: unknown };
+    const errorMessage = typeof messageField.Message === "string"
+      ? messageField.Message
+      : typeof lowerMessageField.message === "string"
+        ? lowerMessageField.message
+        : undefined;
+    return { ok: res.ok, data, status: res.status, error: res.ok ? undefined : errorMessage };
   } catch (e) {
     return { ok: false, status: 500, error: e instanceof Error ? e.message : "void failed" };
+  }
+}
+
+export async function cpListCards(accountId: string): Promise<{ ok: boolean; status: number; data?: { Success?: boolean; Model?: CloudPaymentsSavedCard[]; Message?: string; message?: string }; error?: string }> {
+  try {
+    const res = await fetch(`${API_URL}/cards/list`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...getBasicAuthHeader(),
+      },
+      body: JSON.stringify({
+        AccountId: accountId,
+      }),
+    });
+
+    const data = (await res.json().catch(() => ({}))) as { Success?: boolean; Model?: CloudPaymentsSavedCard[]; Message?: string; message?: string };
+    const ok = res.ok && data?.Success !== false;
+    const errorMessage = typeof data?.Message === "string" ? data.Message : typeof data?.message === "string" ? data.message : undefined;
+
+    return {
+      ok,
+      status: res.status,
+      data,
+      error: ok ? undefined : errorMessage || "cards list failed",
+    };
+  } catch (e) {
+    return {
+      ok: false,
+      status: 500,
+      error: e instanceof Error ? e.message : "cards list failed",
+    };
+  }
+}
+
+export async function cpUnbindCard(accountId: string, token: string): Promise<{ ok: boolean; status: number; data?: Record<string, unknown>; error?: string }> {
+  try {
+    const res = await fetch(`${API_URL}/cards/unbind`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...getBasicAuthHeader(),
+      },
+      body: JSON.stringify({
+        AccountId: accountId,
+        Token: token,
+      }),
+    });
+
+    const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    const successField = data as { Success?: unknown };
+    const messageField = data as { Message?: unknown };
+    const lowerMessageField = data as { message?: unknown };
+    const ok = res.ok && successField.Success !== false;
+    const errorMessage = typeof messageField.Message === "string"
+      ? messageField.Message
+      : typeof lowerMessageField.message === "string"
+        ? lowerMessageField.message
+        : undefined;
+
+    return {
+      ok,
+      status: res.status,
+      data,
+      error: ok ? undefined : errorMessage || "card unbind failed",
+    };
+  } catch (e) {
+    return {
+      ok: false,
+      status: 500,
+      error: e instanceof Error ? e.message : "card unbind failed",
+    };
   }
 }
 

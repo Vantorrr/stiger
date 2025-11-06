@@ -1,23 +1,157 @@
 "use client";
-import { useEffect, useState } from "react";
+
+import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AuthenticatedLayout from "@/components/AuthenticatedLayout";
 import Script from "next/script";
 
+type SavedCard = {
+  id: string;
+  mask: string;
+  type: string;
+  token?: string;
+};
+
+interface User {
+  id?: string;
+  telegramId?: number;
+  phone?: string;
+  [key: string]: unknown;
+}
+
+interface PaymentData {
+  publicId: string;
+  description: string;
+  amount: number;
+  currency: string;
+  invoiceId: string;
+  accountId: string;
+  jsonData: {
+    tariffPrice: number;
+    depositAmount: number;
+    [key: string]: unknown;
+  };
+}
+
+interface RentalOrder {
+  paymentData: PaymentData;
+  deviceId: string;
+  device: {
+    address?: string;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+interface CloudPaymentsSuccessPayload {
+  TransactionId?: string;
+  transactionId?: string;
+  CardLastFour?: string;
+  CardType?: string;
+}
+
+interface CloudPaymentsWidgetCallbacks {
+  onSuccess(result: CloudPaymentsSuccessPayload): void;
+  onFail(reason: string, data: unknown): void;
+  onComplete(): void;
+}
+
+interface CloudPaymentsAuthParams {
+  publicId: string;
+  description: string;
+  amount: number;
+  currency: string;
+  invoiceId?: string;
+  accountId?: string;
+  requireConfirmation?: boolean;
+  saveCard?: boolean;
+  data?: Record<string, unknown>;
+  skin?: string;
+  language?: string;
+}
+
+interface CloudPaymentsWidget {
+  auth(params: CloudPaymentsAuthParams, callbacks: CloudPaymentsWidgetCallbacks): void;
+}
+
+interface CloudPaymentsNamespace {
+  CloudPayments: new () => CloudPaymentsWidget;
+}
+
 declare global {
   interface Window {
-    cp: any;
+    cp?: CloudPaymentsNamespace;
   }
 }
 
+function resolveAccountId(user: User | null): string | null {
+  if (!user) return null;
+  return (
+    user?.id ||
+    (user?.telegramId ? String(user.telegramId) : null) ||
+    user?.phone ||
+    null
+  );
+}
+
+function normalizeCards(cards: Array<{ LastFour?: string; Token?: string; Type?: string; PaymentSystem?: string }> = []): SavedCard[] {
+  return cards.map((card, index) => {
+    const token = card.Token || `card-${index}`;
+    const type = card.PaymentSystem || card.Type || "Unknown";
+    const mask = card.LastFour ? `•••• ${card.LastFour}` : "•••• ••••";
+
+    return {
+      id: token,
+      mask,
+      type,
+      token: card.Token,
+    };
+  });
+}
+
 export default function PaymentPage() {
-  const [user, setUser] = useState<any>(null);
-  const [order, setOrder] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [order, setOrder] = useState<RentalOrder | null>(null);
   const [loading, setLoading] = useState(false);
   const [scriptLoaded, setScriptLoaded] = useState(false);
+  const [savedCards, setSavedCards] = useState<SavedCard[]>([]);
+  const [savedCardsLoading, setSavedCardsLoading] = useState(true);
+  const [cardsError, setCardsError] = useState<string | null>(null);
+  const [savedSBPPhone, setSavedSBPPhone] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
   const orderId = searchParams.get("orderId");
+
+  const fetchCards = useCallback(async (id: string) => {
+    setSavedCardsLoading(true);
+    setCardsError(null);
+
+    try {
+      const res = await fetch("/api/cards/list", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accountId: id }),
+      });
+
+      const data = (await res.json().catch(() => ({}))) as {
+        success?: boolean;
+        cards?: Array<{ LastFour?: string; Token?: string; Type?: string; PaymentSystem?: string }>;
+        error?: string;
+      };
+
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.error || "Не удалось получить список карт");
+      }
+
+      setSavedCards(normalizeCards(data.cards));
+    } catch (error) {
+      console.error("rental payment cards", error);
+      setSavedCards([]);
+      setCardsError(error instanceof Error ? error.message : "Не удалось получить список карт");
+    } finally {
+      setSavedCardsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     const userData = localStorage.getItem("stiger_user");
@@ -25,17 +159,37 @@ export default function PaymentPage() {
       router.push("/auth");
       return;
     }
-    setUser(JSON.parse(userData));
+
+    try {
+      const parsedUser = JSON.parse(userData) as User;
+      setUser(parsedUser);
+      const id = resolveAccountId(parsedUser);
+      // setAccountId(id); // This line is removed
+
+      if (id) {
+        fetchCards(id);
+      } else {
+        setSavedCardsLoading(false);
+        setCardsError("Не удалось определить аккаунт для CloudPayments. Авторизуйся заново.");
+      }
+    } catch (error) {
+      console.error("Failed to parse stiger_user", error);
+      localStorage.removeItem("stiger_user");
+      router.push("/auth");
+      return;
+    }
     
-    // Загружаем сохраненный заказ
     const savedOrder = localStorage.getItem(`order_${orderId}`);
     if (savedOrder) {
-      setOrder(JSON.parse(savedOrder));
+      setOrder(JSON.parse(savedOrder) as RentalOrder);
     } else {
       alert("Заказ не найден");
       router.push("/scan");
     }
-  }, [router, orderId]);
+
+    const sbp = localStorage.getItem("stinger_sbp_phone");
+    setSavedSBPPhone(sbp);
+  }, [router, orderId, fetchCards]);
 
   const handlePayment = () => {
     if (!order) {
@@ -44,15 +198,15 @@ export default function PaymentPage() {
     }
 
     // Проверяем выбранный способ оплаты
-    const selectedPayment = document.querySelector('input[name="payment"]:checked');
+    const selectedPayment = document.querySelector<HTMLInputElement>('input[name="payment"]:checked');
     if (!selectedPayment) {
       alert("Выберите способ оплаты");
       return;
     }
 
-    const paymentType = selectedPayment.nextElementSibling?.querySelector('.font-medium')?.textContent;
+    const paymentType = selectedPayment.dataset.type;
     
-    if (paymentType === "СБП") {
+    if (paymentType === "sbp") {
       // Для СБП генерируем QR-код или редирект
       setLoading(true);
       
@@ -72,9 +226,15 @@ export default function PaymentPage() {
       return;
     }
 
+    const cp = window.cp;
+    if (!cp) {
+      alert("Платежная система не инициализирована");
+      return;
+    }
+
     setLoading(true);
 
-    const widget = new window.cp.CloudPayments();
+    const widget = new cp.CloudPayments();
     
     // Используем auth для двухстадийной оплаты (холд средств)
     widget.auth({
@@ -84,39 +244,39 @@ export default function PaymentPage() {
       currency: order.paymentData.currency,
       invoiceId: order.paymentData.invoiceId,
       accountId: order.paymentData.accountId,
-      data: order.paymentData.jsonData,
+      data: order.paymentData.jsonData as Record<string, unknown>,
       
       // Настройки виджета
       skin: "modern",
       language: "ru-RU"
     },
     {
-      onSuccess: function(options: any) {
-        console.log('✅ Платеж успешен:', options);
+      onSuccess: (options: CloudPaymentsSuccessPayload) => {
+        console.log("✅ Платеж успешен:", options);
         // Тригерим серверный confirm для выдачи (не ждем вебхук)
         fetch('/api/rentals/confirm', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             orderId: orderId,
-            transactionId: options.transactionId
+            transactionId: options.TransactionId || options.transactionId
           })
         }).then(() => {
           setLoading(false);
-          router.push(`/rental/success?orderId=${orderId}&transactionId=${options.transactionId}`);
+          router.push(`/rental/success?orderId=${orderId}&transactionId=${options.TransactionId || options.transactionId || ''}`);
         }).catch(() => {
           setLoading(false);
-          router.push(`/rental/success?orderId=${orderId}&transactionId=${options.transactionId}`);
+          router.push(`/rental/success?orderId=${orderId}&transactionId=${options.TransactionId || options.transactionId || ''}`);
         });
       },
-      onFail: function(reason: string, options: any) {
-        console.error('❌ Платеж отклонен:', reason, options);
+      onFail: (reason: string, data: unknown) => {
+        console.error('❌ Платеж отклонен:', reason, data);
         setLoading(false);
         alert(`Ошибка оплаты: ${reason}`);
       },
-      onComplete: function(paymentResult: any, options: any) {
+      onComplete: () => {
         // Окно закрыто после оплаты
-        console.log("Payment completed:", paymentResult);
+        console.log("Payment completed");
       }
     });
   };
@@ -205,58 +365,71 @@ export default function PaymentPage() {
               <h3 className="font-semibold mb-4 text-lg">Способ оплаты</h3>
               
               {/* Сохраненные способы оплаты */}
-              {(() => {
-                const savedCards = JSON.parse(localStorage.getItem("stiger_cards") || "[]");
-                const savedSBP = localStorage.getItem("stinger_sbp_phone");
-                
-                if (savedCards.length > 0 || savedSBP) {
-                  return (
-                    <div className="space-y-3">
-                      {savedCards.map((card: any, index: number) => (
-                        <label key={card.id} className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/50 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors">
-                          <input type="radio" name="payment" defaultChecked={index === 0} className="w-4 h-4 text-purple-600" />
-                          <div className="flex items-center gap-3 flex-1">
-                            <div className="w-12 h-8 rounded bg-gradient-to-r from-gray-700 to-gray-900 flex items-center justify-center text-white text-xs font-bold">
-                              {card.type.toUpperCase()}
-                            </div>
-                            <span className="font-mono">{card.mask}</span>
-                          </div>
-                        </label>
-                      ))}
-                      
-                      {savedSBP && (
-                        <label className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/50 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors">
-                          <input type="radio" name="payment" defaultChecked={savedCards.length === 0} className="w-4 h-4 text-purple-600" />
-                          <div className="flex items-center gap-3 flex-1">
-                            <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-green-500 to-blue-500 flex items-center justify-center text-white text-lg">
-                              📱
-                            </div>
-                            <div>
-                              <p className="font-medium">СБП</p>
-                              <p className="text-sm text-gray-500">+{savedSBP}</p>
-                            </div>
-                          </div>
-                        </label>
-                      )}
-                      
-                      <a href="/payment" className="block text-center text-purple-600 hover:text-purple-700 font-medium text-sm mt-2">
-                        + Добавить способ оплаты
-                      </a>
-                    </div>
-                  );
-                }
-                
-                // Если нет сохраненных способов
-                return (
-                  <div className="text-center py-8">
-                    <p className="text-gray-500 mb-4">Нет сохраненных способов оплаты</p>
-                    <a href="/payment" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl gradient-bg text-white font-medium">
-                      <span>💳</span>
-                      <span>Добавить способ оплаты</span>
-                    </a>
-                  </div>
-                );
-              })()}
+              {cardsError && (
+                <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-600">
+                  {cardsError}
+                </div>
+              )}
+              {savedCardsLoading ? (
+                <div className="text-center py-6 text-gray-500">Загружаем сохраненные способы оплаты…</div>
+              ) : savedCards.length > 0 || savedSBPPhone ? (
+                <div className="space-y-3">
+                  {savedCards.map((card, index) => (
+                    <label
+                      key={card.id}
+                      className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/50 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
+                    >
+                      <input
+                        type="radio"
+                        name="payment"
+                        defaultChecked={index === 0}
+                        className="w-4 h-4 text-purple-600"
+                        data-type="card"
+                        data-token={card.token || ""}
+                      />
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className="w-12 h-8 rounded bg-gradient-to-r from-gray-700 to-gray-900 flex items-center justify-center text-white text-xs font-bold">
+                          {card.type.toUpperCase()}
+                        </div>
+                        <span className="font-mono">{card.mask}</span>
+                      </div>
+                    </label>
+                  ))}
+
+                  {savedSBPPhone && (
+                    <label className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/50 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors">
+                      <input
+                        type="radio"
+                        name="payment"
+                        defaultChecked={savedCards.length === 0}
+                        className="w-4 h-4 text-purple-600"
+                        data-type="sbp"
+                      />
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-green-500 to-blue-500 flex items-center justify-center text-white text-lg">
+                          📱
+                        </div>
+                        <div>
+                          <p className="font-medium">СБП</p>
+                          <p className="text-sm text-gray-500">+{savedSBPPhone}</p>
+                        </div>
+                      </div>
+                    </label>
+                  )}
+
+                  <a href="/payment" className="block text-center text-purple-600 hover:text-purple-700 font-medium text-sm mt-2">
+                    + Добавить способ оплаты
+                  </a>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500 mb-4">Нет сохраненных способов оплаты</p>
+                  <a href="/payment" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl gradient-bg text-white font-medium">
+                    <span>💳</span>
+                    <span>Добавить способ оплаты</span>
+                  </a>
+                </div>
+              )}
             </div>
 
             {/* Кнопка оплаты */}

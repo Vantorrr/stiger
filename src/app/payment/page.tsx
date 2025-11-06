@@ -1,28 +1,169 @@
 "use client";
+
 import AuthenticatedLayout from "@/components/AuthenticatedLayout";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Script from "next/script";
+
+type SavedCard = {
+  id: string;
+  mask: string;
+  type: string;
+  token?: string;
+};
+
+interface CloudPaymentsSuccessPayload {
+  CardLastFour?: string;
+  CardType?: string;
+  Token?: string;
+  RebillId?: string;
+  TransactionId?: string;
+  transactionId?: string;
+}
+
+interface CloudPaymentsWidgetCallbacks {
+  onSuccess(result: CloudPaymentsSuccessPayload): void;
+  onFail(reason: string, data: unknown): void;
+  onComplete(): void;
+}
+
+interface CloudPaymentsAuthParams {
+  publicId: string;
+  description: string;
+  amount: number;
+  currency: string;
+  requireConfirmation?: boolean;
+  saveCard?: boolean;
+  accountId?: string;
+}
+
+interface CloudPaymentsWidget {
+  auth(params: CloudPaymentsAuthParams, callbacks: CloudPaymentsWidgetCallbacks): void;
+}
+
+interface CloudPaymentsNamespace {
+  CloudPayments: new () => CloudPaymentsWidget;
+}
 
 declare global {
   interface Window {
-    cp: any;
+    cp?: CloudPaymentsNamespace;
   }
 }
 
+function resolveAccountId(): string | null {
+  try {
+    const userRaw = localStorage.getItem("stiger_user");
+    if (!userRaw) return null;
+
+    const user = JSON.parse(userRaw);
+    return (
+      user?.id ||
+      user?.telegramId?.toString?.() ||
+      user?.phone ||
+      null
+    );
+  } catch (e) {
+    console.error("Failed to parse stiger_user", e);
+    return null;
+  }
+}
+
+function normalizeCards(cards: Array<{ LastFour?: string; Token?: string; Type?: string; PaymentSystem?: string }> = []): SavedCard[] {
+  return cards.map((card, index) => {
+    const token = card.Token || `card-${index}`;
+    const cardType = card.PaymentSystem || card.Type || "Unknown";
+    const mask = card.LastFour ? `•••• ${card.LastFour}` : "•••• ••••";
+
+    return {
+      id: token,
+      mask,
+      type: cardType,
+      token: card.Token,
+    };
+  });
+}
+
 export default function PaymentPage() {
-  const [savedCards, setSavedCards] = useState<Array<{id: string, mask: string, type: string, token?: string}>>([]);
+  const [accountId, setAccountId] = useState<string | null>(null);
+  const [savedCards, setSavedCards] = useState<SavedCard[]>([]);
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadingCards, setLoadingCards] = useState(true);
+  const [cardsError, setCardsError] = useState<string | null>(null);
   const publicId = (process.env.NEXT_PUBLIC_CLOUDPAYMENTS_PUBLIC_ID as string) || "";
-  
-  useEffect(() => {
-    // Загружаем сохраненные карты (единый ключ)
-    const cards = JSON.parse(localStorage.getItem("stiger_cards") || "[]");
-    setSavedCards(cards);
+
+  const fetchCards = useCallback(async (id: string) => {
+    setLoadingCards(true);
+    setCardsError(null);
+    try {
+      const res = await fetch("/api/cards/list", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accountId: id }),
+      });
+
+      const data = (await res.json().catch(() => ({}))) as {
+        success?: boolean;
+        cards?: Array<{ LastFour?: string; Token?: string; Type?: string; PaymentSystem?: string }>;
+        error?: string;
+      };
+
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.error || "Не удалось получить список карт");
+      }
+
+      setSavedCards(normalizeCards(data.cards));
+    } catch (error) {
+      console.error("Failed to fetch cards", error);
+      setSavedCards([]);
+      setCardsError(error instanceof Error ? error.message : "Не удалось получить список карт");
+    } finally {
+      setLoadingCards(false);
+    }
   }, []);
 
-  const saveCard = () => {
-    console.log("saveCard called", { scriptLoaded, cp: window.cp });
+  useEffect(() => {
+    const id = resolveAccountId();
+    setAccountId(id);
+
+    if (id) {
+      fetchCards(id);
+    } else {
+      setLoadingCards(false);
+      setCardsError("Не удалось определить пользователя. Залогинься заново.");
+    }
+  }, [fetchCards]);
+
+  const deleteCard = useCallback(async (card: SavedCard) => {
+    if (!accountId || !card.token) {
+      alert("Не удалось удалить карту: нет token");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/cards/unbind", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accountId, token: card.token }),
+      });
+
+      const data = (await res.json().catch(() => ({}))) as {
+        success?: boolean;
+        error?: string;
+      };
+
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.error || "Не удалось отвязать карту");
+      }
+
+      await fetchCards(accountId);
+    } catch (error) {
+      console.error("Failed to unbind card", error);
+      alert(error instanceof Error ? error.message : "Не удалось отвязать карту");
+    }
+  }, [accountId, fetchCards]);
+
+  const saveCard = useCallback(() => {
     if (!publicId) {
       alert("Платежный ключ не настроен. Установите NEXT_PUBLIC_CLOUDPAYMENTS_PUBLIC_ID и перезапустите деплой.");
       return;
@@ -32,20 +173,24 @@ export default function PaymentPage() {
       alert("Платежная система еще не загружена, попробуйте снова");
       return;
     }
-    
+
+    const id = accountId || resolveAccountId();
+    if (!id) {
+      alert("Не удалось определить пользователя. Авторизуйся и попробуй снова.");
+      return;
+    }
+
+    const cp = window.cp;
+    if (!cp) {
+      alert("Платежная система не инициализирована");
+      return;
+    }
+
+    setAccountId(id);
     setLoading(true);
-    // Определяем accountId для привязки карты к конкретному пользователю
-    let accountId: string | undefined = undefined;
-    try {
-      const userRaw = localStorage.getItem("stiger_user");
-      if (userRaw) {
-        const user = JSON.parse(userRaw);
-        accountId = user?.id || user?.telegramId?.toString() || user?.phone || undefined;
-      }
-    } catch {}
-    const widget = new window.cp.CloudPayments();
-    
-    // Используем метод auth с суммой 1 рубль для проверки и токенизации карты
+
+    const widget = new cp.CloudPayments();
+
     widget.auth({
       publicId,
       description: "Привязка карты к Stiger",
@@ -53,51 +198,27 @@ export default function PaymentPage() {
       currency: "RUB",
       requireConfirmation: false,
       saveCard: true,
-      accountId
-      // Не передаём successUrl, failUrl, data — вообще ничего лишнего!
+      accountId: id,
     }, {
-      onSuccess: (options: any) => {
-        console.log("CloudPayments success:", options);
-        
-        // Проверяем, что данные есть
-        if (!options) {
-          console.error("No options returned from CloudPayments");
-          alert("Ошибка: не получены данные карты");
-          setLoading(false);
-          return;
-        }
-        
-        // Сохраняем токен карты
-        const newCard = {
-          id: Date.now().toString(),
-          mask: options.CardLastFour ? `•••• ${options.CardLastFour}` : "•••• ••••",
-          type: options.CardType || "Unknown",
-          token: options.Token || options.RebillId, // Иногда токен приходит как RebillId
-          transactionId: options.TransactionId
-        };
-        
-        console.log("Saving card:", newCard);
-        
-        const updated = [...savedCards, newCard];
-        localStorage.setItem("stiger_cards", JSON.stringify(updated));
-        setSavedCards(updated);
-        
+      onSuccess: async (options: CloudPaymentsSuccessPayload) => {
+        console.log("CloudPayments success", options);
         setLoading(false);
         alert("Карта успешно привязана!");
-        
-        // Возвращаем 1 рубль (отменяем транзакцию)
-        fetch("/api/cloudpayments/refund", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ transactionId: options.TransactionId })
-        });
-        
-        // Редирект в личный кабинет
-        setTimeout(() => {
-          window.location.href = "/dashboard";
-        }, 1500);
+
+        try {
+          await fetch("/api/cloudpayments/refund", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ transactionId: options?.TransactionId || options?.transactionId }),
+          });
+        } catch (error) {
+          console.warn("Refund request failed", error);
+        }
+
+        await fetchCards(id);
       },
-      onFail: (reason: any, options: any) => {
+      onFail: (reason: string, data: unknown) => {
+        console.error("CloudPayments fail", reason, data);
         setLoading(false);
         alert(`Ошибка: ${reason}`);
       },
@@ -105,32 +226,17 @@ export default function PaymentPage() {
         setLoading(false);
       }
     });
-  };
+  }, [accountId, fetchCards, publicId, scriptLoaded]);
 
-  const deleteCard = (id: string) => {
-    const updated = savedCards.filter(card => card.id !== id);
-    localStorage.setItem("stiger_cards", JSON.stringify(updated));
-    setSavedCards(updated);
-  };
-
-  const detectCardType = (pan: string): string => {
-    const firstDigit = pan[0];
-    const firstTwo = pan.substring(0, 2);
-    const firstFour = pan.substring(0, 4);
-    
-    if (firstDigit === "4") return "Visa";
-    if (["51", "52", "53", "54", "55"].includes(firstTwo)) return "Mastercard";
-    if (firstTwo === "22") return "МИР";
-    if (["34", "37"].includes(firstTwo)) return "AmEx";
-    if (firstTwo === "62") return "UnionPay";
-    if (["2200", "2201", "2202", "2203", "2204"].includes(firstFour)) return "МИР";
-    
-    return "Unknown";
-  };
+  const heading = useMemo(() => {
+    if (loadingCards) return "Загрузка карт...";
+    if (cardsError) return "Способы оплаты";
+    return "Способы оплаты";
+  }, [cardsError, loadingCards]);
 
   return (
     <>
-      <Script 
+      <Script
         src="https://widget.cloudpayments.ru/bundles/cloudpayments.js"
         onLoad={() => setScriptLoaded(true)}
       />
@@ -138,18 +244,24 @@ export default function PaymentPage() {
         <div className="min-h-screen px-6 py-20">
           <div className="max-w-2xl mx-auto">
             <h1 className="text-3xl font-bold mb-8">
-              <span className="gradient-text">Способы оплаты</span>
+              <span className="gradient-text">{heading}</span>
             </h1>
 
-            {/* Основной блок с картами */}
             <div className="glass-premium rounded-3xl p-8 animate-fade-in">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold">Мои способы оплаты</h2>
                 <div className="text-4xl">💳</div>
               </div>
-              
-              {/* Сохраненные карты */}
-              {savedCards.length > 0 ? (
+
+              {cardsError && (
+                <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-sm text-red-600">
+                  {cardsError}
+                </div>
+              )}
+
+              {loadingCards ? (
+                <div className="text-center py-8 mb-8">Загружаем сохраненные карты…</div>
+              ) : savedCards.length > 0 ? (
                 <div className="space-y-3 mb-8">
                   {savedCards.map((card) => (
                     <div key={card.id} className="flex items-center justify-between p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
@@ -160,7 +272,7 @@ export default function PaymentPage() {
                         <span className="font-mono font-medium">{card.mask}</span>
                       </div>
                       <button
-                        onClick={() => deleteCard(card.id)}
+                        onClick={() => deleteCard(card)}
                         className="text-red-500 hover:text-red-600 transition-colors p-2"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -174,20 +286,19 @@ export default function PaymentPage() {
                 <div className="text-center py-8 mb-8">
                   <div className="text-6xl mb-4">💳</div>
                   <p className="text-gray-600 dark:text-gray-400">
-                    У вас пока нет привязанных карт
+                    У тебя пока нет привязанных карт
                   </p>
                 </div>
               )}
 
-              {/* Кнопка добавления */}
               <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  CloudPayments поддерживает все популярные способы оплаты: банковские карты, СБП, Apple Pay, Google Pay и другие
+                  CloudPayments поддерживает все популярные способы оплаты: карты, СБП, Apple Pay, Google Pay и другие
                 </p>
                 {!scriptLoaded && (
                   <div className="text-sm text-gray-500 mb-2">Загрузка платежной системы...</div>
                 )}
-                <button 
+                <button
                   onClick={saveCard}
                   disabled={loading || !scriptLoaded}
                   className="w-full h-12 rounded-xl gradient-bg text-white font-semibold button-premium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
@@ -208,7 +319,6 @@ export default function PaymentPage() {
               </div>
             </div>
 
-            {/* Информационный блок */}
             <div className="mt-6 p-4 rounded-2xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
               <div className="flex gap-3">
                 <div className="text-blue-500 mt-0.5">
@@ -218,7 +328,7 @@ export default function PaymentPage() {
                 </div>
                 <div className="text-sm text-blue-800 dark:text-blue-200">
                   <p className="font-semibold mb-1">Безопасность платежей</p>
-                  <p>Все платежи защищены по стандарту PCI DSS. Мы не храним данные ваших карт.</p>
+                  <p>Все платежи защищены по стандарту PCI DSS. Мы не храним данные твоих карт — токены и маски берем напрямую из CloudPayments.</p>
                 </div>
               </div>
             </div>

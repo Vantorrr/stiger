@@ -1,29 +1,111 @@
 "use client";
-import { useEffect, useState } from "react";
+
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 interface User {
   email: string;
   name: string;
+  id?: string;
+  telegramId?: number;
+  phone?: string;
+}
+
+type SavedCard = {
+  id: string;
+  mask: string;
+  type: string;
+  token?: string;
+};
+
+function resolveAccountId(user: User | null): string | null {
+  if (!user) return null;
+  return (
+    user.id ||
+    (user.telegramId ? String(user.telegramId) : null) ||
+    user.phone ||
+    null
+  );
+}
+
+function normalizeCards(cards: Array<{ LastFour?: string; Token?: string; Type?: string; PaymentSystem?: string }> = []): SavedCard[] {
+  return cards.map((card, index) => {
+    const token = card.Token || `card-${index}`;
+    const type = card.PaymentSystem || card.Type || "Unknown";
+    const mask = card.LastFour ? `•••• ${card.LastFour}` : "•••• ••••";
+
+    return {
+      id: token,
+      mask,
+      type,
+      token: card.Token,
+    };
+  });
 }
 
 export default function Dashboard() {
   const [user, setUser] = useState<User | null>(null);
-  const [savedCards, setSavedCards] = useState<Array<{id: string, mask: string, type: string, token?: string}>>([]);
+  const [savedCards, setSavedCards] = useState<SavedCard[]>([]);
+  const [loadingCards, setLoadingCards] = useState(true);
+  const [cardsError, setCardsError] = useState<string | null>(null);
   const router = useRouter();
+
+  const fetchCards = useCallback(async (id: string) => {
+    setLoadingCards(true);
+    setCardsError(null);
+    try {
+      const res = await fetch("/api/cards/list", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accountId: id }),
+      });
+
+      const data = (await res.json().catch(() => ({}))) as {
+        success?: boolean;
+        cards?: Array<{ LastFour?: string; Token?: string; Type?: string; PaymentSystem?: string }>;
+        error?: string;
+      };
+
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.error || "Не удалось получить список карт");
+      }
+
+      setSavedCards(normalizeCards(data.cards));
+    } catch (error) {
+      console.error("dashboard cards list", error);
+      setSavedCards([]);
+      setCardsError(error instanceof Error ? error.message : "Не удалось получить список карт");
+    } finally {
+      setLoadingCards(false);
+    }
+  }, []);
 
   useEffect(() => {
     const userData = localStorage.getItem("stiger_user");
-    if (userData) {
-      setUser(JSON.parse(userData));
-      // Загружаем привязанные карты
-      const cards = JSON.parse(localStorage.getItem("stiger_cards") || "[]");
-      setSavedCards(cards);
-    } else {
+
+    if (!userData) {
+      router.push("/auth");
+      return;
+    }
+
+    try {
+      const parsed: User = JSON.parse(userData);
+      setUser(parsed);
+      const id = resolveAccountId(parsed);
+
+      if (id) {
+        fetchCards(id);
+      } else {
+        setLoadingCards(false);
+        setCardsError("Не удалось определить аккаунт для CloudPayments. Авторизуйся заново.");
+      }
+    } catch (error) {
+      console.error("Failed to parse stiger_user", error);
+      localStorage.removeItem("stiger_user");
       router.push("/auth");
     }
-  }, [router]);
+  }, [fetchCards, router]);
 
   const handleLogout = () => {
     localStorage.removeItem("stiger_user");
@@ -45,7 +127,7 @@ export default function Dashboard() {
             <Link href="/dashboard" className="text-purple-600">Личный кабинет</Link>
             <Link href="/wallet" className="hover:text-purple-600 transition-colors">Кошелёк</Link>
             <Link href="/map" className="hover:text-purple-600 transition-colors">Карта</Link>
-            <button 
+            <button
               onClick={handleLogout}
               className="inline-flex items-center justify-center h-9 px-4 rounded-full bg-gradient-to-r from-red-500 to-pink-500 text-white font-semibold hover:shadow-lg transition-all duration-300"
             >
@@ -79,10 +161,20 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Привязанные карты */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold mb-4">💳 Привязанные карты</h2>
-          {savedCards.length > 0 ? (
+
+          {cardsError && (
+            <div className="glass-effect rounded-2xl p-4 shadow-xl mb-4 text-red-600 text-sm">
+              {cardsError}
+            </div>
+          )}
+
+          {loadingCards ? (
+            <div className="glass-effect rounded-2xl p-6 shadow-xl text-center">
+              <p className="text-gray-600 dark:text-gray-300">Загружаем сохраненные карты…</p>
+            </div>
+          ) : savedCards.length > 0 ? (
             <div className="grid md:grid-cols-2 gap-4">
               {savedCards.map((card) => (
                 <div key={card.id} className="glass-effect rounded-2xl p-4 shadow-xl">

@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyCloudPaymentsHmac } from "@/lib/cloudpayments";
 
+type CloudPaymentsWebhookPayload = {
+  Status?: string;
+  InvoiceId?: string;
+  TransactionId?: string;
+  Amount?: number;
+  Description?: string;
+  AccountId?: string;
+  Data?: Record<string, unknown> | string | null;
+  [key: string]: unknown;
+};
+
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
@@ -8,21 +19,21 @@ export async function POST(req: NextRequest) {
   // Универсальный парсинг тела: JSON или x-www-form-urlencoded
   const contentType = req.headers.get("content-type") || "";
   let raw = "";
-  let payload: any = {};
+  let payload: CloudPaymentsWebhookPayload = {};
   try {
     raw = await req.text();
     if (contentType.includes("application/json")) {
-      payload = JSON.parse(raw || "{}");
+      payload = JSON.parse(raw || "{}") as CloudPaymentsWebhookPayload;
     } else if (contentType.includes("application/x-www-form-urlencoded")) {
       const params = new URLSearchParams(raw);
-      payload = Object.fromEntries(params.entries());
+      payload = Object.fromEntries(params.entries()) as CloudPaymentsWebhookPayload;
     } else {
       // Пытаемся сначала как JSON, затем как form-urlencoded
       try {
-        payload = JSON.parse(raw || "{}");
+        payload = JSON.parse(raw || "{}") as CloudPaymentsWebhookPayload;
       } catch {
         const params = new URLSearchParams(raw || "");
-        payload = Object.fromEntries(params.entries());
+        payload = Object.fromEntries(params.entries()) as CloudPaymentsWebhookPayload;
       }
     }
   } catch (e) {
@@ -52,7 +63,22 @@ export async function POST(req: NextRequest) {
 
   console.log("[CP Webhook]", payload?.Status, payload?.InvoiceId, payload?.TransactionId);
 
-  const { Status, InvoiceId, TransactionId, Amount, Data } = payload;
+  const { Status, InvoiceId, TransactionId, Amount } = payload;
+  const dataPayload: Record<string, unknown> | undefined = (() => {
+    if (!payload.Data) return undefined;
+    if (typeof payload.Data === "string") {
+      try {
+        return JSON.parse(payload.Data) as Record<string, unknown>;
+      } catch {
+        return undefined;
+      }
+    }
+    if (typeof payload.Data === "object") {
+      return payload.Data as Record<string, unknown>;
+    }
+    return undefined;
+  })();
+  const getString = (value: unknown): string | undefined => (typeof value === "string" ? value : undefined);
 
   // Check-запрос (перед авторизацией)
   if (isCheckRequest) {
@@ -72,40 +98,29 @@ export async function POST(req: NextRequest) {
       // Платеж авторизован (деньги заблокированы)
       console.log(`[CP] Payment authorized for order ${InvoiceId}, amount: ${Amount}`);
       
-      // Если это привязка карты (amount = 1), сохраняем её через API
       if (Amount === 1 && payload.Description?.includes("Привязка карты")) {
-        try {
-          await fetch(`${process.env.APP_URL}/api/cards/save`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              accountId: payload.AccountId,
-              cardLastFour: payload.CardLastFour,
-              cardType: payload.CardType,
-              token: payload.Token,
-              transactionId: TransactionId
-            })
-          });
-        } catch (e) {
-          console.error("Card save via webhook failed", e);
-        }
-      } else {
-        // Это аренда — подтверждаем и выдаём
-        try {
-          await fetch(`${process.env.APP_URL}/api/rentals/confirm`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              orderId: InvoiceId,
-              transactionId: TransactionId,
-              deviceId: Data?.deviceId,
-              shopId: Data?.shopId,
-              slotNum: Data?.slotNum
-            })
-          });
-        } catch (e) {
-          console.error("Confirm via webhook failed", e);
-        }
+        console.log(`[CP] Card binding authorized for account ${payload.AccountId}`);
+        break;
+      }
+      
+      const deviceId = dataPayload ? getString(dataPayload["deviceId"]) : undefined;
+      const shopId = dataPayload ? getString(dataPayload["shopId"]) : undefined;
+      const slotNum = dataPayload ? getString(dataPayload["slotNum"]) : undefined;
+      
+      try {
+        await fetch(`${process.env.APP_URL}/api/rentals/confirm`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            orderId: InvoiceId,
+            transactionId: TransactionId,
+            deviceId,
+            shopId,
+            slotNum
+          })
+        });
+      } catch (e) {
+        console.error("Confirm via webhook failed", e);
       }
       
       break;
