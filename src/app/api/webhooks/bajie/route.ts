@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cpChargeToken, cpListCards } from "@/lib/cloudpayments";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -7,6 +9,28 @@ function isAuthorized(req: NextRequest): boolean {
   const expected = process.env.BAJIE_EVENT_PUSH_SECRET;
   if (!expected) return true; // allow when not configured
   return !!provided && provided === expected;
+}
+
+// Рассчитывает стоимость аренды на основе времени использования
+function calculateRentalCost(startTime: Date, endTime: Date, tariffId: string): number {
+  const tariffs: Record<string, { price: number; hours: number }> = {
+    "1hour": { price: 200, hours: 1 },
+    "4hours": { price: 400, hours: 4 },
+    "daily": { price: 1000, hours: 24 }
+  };
+
+  const tariff = tariffs[tariffId] || tariffs["1hour"];
+  const hoursUsed = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+  
+  // Если использовано меньше тарифа - списываем только тариф
+  if (hoursUsed <= tariff.hours) {
+    return tariff.price;
+  }
+  
+  // Если больше - списываем тариф + доплата за каждый час сверх тарифа
+  const extraHours = Math.ceil(hoursUsed - tariff.hours);
+  const extraCost = extraHours * 100; // 100 руб за каждый дополнительный час
+  return tariff.price + extraCost;
 }
 
 export async function POST(req: NextRequest) {
@@ -22,14 +46,125 @@ export async function POST(req: NextRequest) {
   
   switch (event) {
     case "BATTERY_IN":
-      // Батарея возвращена
+      // Батарея возвращена - списываем тариф
       console.log(`[Bajie] Battery returned to ${deviceId}, slot: ${data?.slotNum}`);
       
-      // TODO: 
-      // 1. Найти активный заказ по deviceId и batteryId
-      // 2. Рассчитать финальную стоимость
-      // 3. Вызвать CloudPayments Confirm для списания
-      // 4. Обновить статус заказа на completed
+      try {
+        const rentOrderId = data?.rentOrderId;
+        
+        if (!rentOrderId) {
+          console.error("[Bajie] Missing rentOrderId for BATTERY_IN");
+          break;
+        }
+
+        // Получаем заказ из БД по rentOrderId
+        const rentalOrder = await prisma.rentalOrder.findFirst({
+          where: { rentOrderId },
+          include: { user: true },
+        });
+
+        if (!rentalOrder) {
+          console.error(`[Bajie] Order not found for rentOrderId: ${rentOrderId}`);
+          break;
+        }
+
+        if (rentalOrder.status !== "active") {
+          console.error(`[Bajie] Order ${rentalOrder.id} is not active, status: ${rentalOrder.status}`);
+          break;
+        }
+
+        // Формируем accountId для CloudPayments
+        const accountId = rentalOrder.user.telegramId 
+          ? `telegram_${rentalOrder.user.telegramId}` 
+          : rentalOrder.user.phone || rentalOrder.userId;
+
+        // Получаем список карт пользователя
+        const cardsResult = await cpListCards(accountId);
+        if (!cardsResult.ok || !cardsResult.data?.Model || cardsResult.data.Model.length === 0) {
+          console.error(`[Bajie] No cards found for account ${accountId}`);
+          // Обновляем статус заказа на completed без списания
+          await prisma.rentalOrder.update({
+            where: { id: rentalOrder.id },
+            data: {
+              status: "completed",
+              endTime: new Date(),
+            },
+          });
+          break;
+        }
+
+        // Берем первую привязанную карту
+        const card = cardsResult.data.Model[0];
+        if (!card.Token) {
+          console.error("[Bajie] Card token not found");
+          break;
+        }
+
+        // Получаем время начала аренды из БД
+        const startTime = rentalOrder.startTime || new Date();
+        const endTime = new Date();
+        
+        // Рассчитываем стоимость (в рублях)
+        const tariffCost = calculateRentalCost(startTime, endTime, rentalOrder.tariffId);
+        
+        // Списываем с карты (в копейках)
+        const chargeResult = await cpChargeToken({
+          token: card.Token,
+          amount: tariffCost * 100, // В копейках
+          currency: "RUB",
+          accountId: accountId,
+          invoiceId: `tariff-${rentalOrder.id}-${Date.now()}`,
+          description: `Списание тарифа за аренду power bank`,
+          jsonData: {
+            rentOrderId: rentalOrder.id,
+            tariffId: rentalOrder.tariffId,
+            startTime: startTime.toISOString(),
+            endTime: endTime.toISOString(),
+          }
+        });
+
+        if (chargeResult.ok) {
+          console.log(`[Bajie] Tariff charged successfully: ${tariffCost} RUB`);
+          
+          // Сохраняем транзакцию списания тарифа
+          const chargeData = chargeResult.data as { TransactionId?: string; Model?: { CardLastFour?: string } };
+          await prisma.transaction.create({
+            data: {
+              orderId: rentalOrder.id,
+              transactionId: chargeData.TransactionId || `charge-${Date.now()}`,
+              accountId: accountId,
+              amount: tariffCost * 100, // В копейках
+              currency: "RUB",
+              status: "completed",
+              description: `Списание тарифа за аренду power bank`,
+              cardToken: card.Token,
+              cardLastFour: card.LastFour || chargeData.Model?.CardLastFour,
+            },
+          });
+
+          // Обновляем статус заказа на completed
+          await prisma.rentalOrder.update({
+            where: { id: rentalOrder.id },
+            data: {
+              status: "completed",
+              endTime: endTime,
+            },
+          });
+        } else {
+          console.error(`[Bajie] Failed to charge tariff: ${chargeResult.error}`);
+          // Обновляем статус заказа на completed даже при ошибке списания
+          // (можно добавить поле для отслеживания ошибок)
+          await prisma.rentalOrder.update({
+            where: { id: rentalOrder.id },
+            data: {
+              status: "completed",
+              endTime: endTime,
+            },
+          });
+        }
+      } catch (error) {
+        console.error("[Bajie] Error processing BATTERY_IN:", error);
+      }
       
       break;
       

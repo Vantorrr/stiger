@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { BajieClient } from "@/lib/bajie";
 import { cpConfirm, cpVoid, cpListCards } from "@/lib/cloudpayments";
+import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -61,7 +62,22 @@ export async function POST(req: NextRequest) {
         }, { status: 402 });
       }
     }
-    // TODO: Проверить, что заказ существует и не обработан
+    // Получаем заказ из БД
+    const rentalOrder = await prisma.rentalOrder.findUnique({
+      where: { id: orderId },
+    });
+
+    if (!rentalOrder) {
+      return NextResponse.json({ 
+        error: "Order not found" 
+      }, { status: 404 });
+    }
+
+    if (rentalOrder.status !== "pending") {
+      return NextResponse.json({ 
+        error: "Order already processed" 
+      }, { status: 400 });
+    }
 
     // Создаем аренду в Bajie
     const bajie = new BajieClient();
@@ -93,6 +109,29 @@ export async function POST(req: NextRequest) {
     }
 
     const tradeNo = createData.data.tradeNo;
+
+    // Сохраняем транзакцию в БД
+    await prisma.transaction.create({
+      data: {
+        orderId: rentalOrder.id,
+        transactionId,
+        accountId: accountId || rentalOrder.userId,
+        amount: (rentalOrder.tariffPrice + rentalOrder.depositAmount), // В копейках
+        currency: "RUB",
+        status: "authorized",
+        description: `Оплата аренды power bank`,
+      },
+    });
+
+    // Обновляем заказ: сохраняем rentOrderId и меняем статус
+    await prisma.rentalOrder.update({
+      where: { id: orderId },
+      data: {
+        rentOrderId: tradeNo,
+        status: "active",
+        startTime: new Date(),
+      },
+    });
 
     // Выдаем powerbank
     const ejectUrl = `${process.env.BAJIE_BASE_URL}/cabinet/ejectByRent?cabinetid=${orderDeviceId}&rentOrderId=${tradeNo}&slotNum=${slotNum || 1}`;

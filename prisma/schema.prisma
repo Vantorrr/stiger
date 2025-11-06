@@ -1,0 +1,82 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  telegramId  Int?     @unique
+  phone       String?  @unique
+  firstName   String?
+  lastName    String?
+  username    String?
+  email       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orders      RentalOrder[]
+
+  @@index([telegramId])
+  @@index([phone])
+}
+
+model RentalOrder {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  deviceId      String
+  shopId        String
+  slotNum       Int?     @default(1)
+  
+  tariffId      String   // "1hour", "4hours", "daily"
+  tariffPrice   Int      // Цена тарифа в копейках
+  depositAmount Int      // Депозит в копейках
+  
+  startTime     DateTime? // Время начала аренды
+  endTime       DateTime?  // Время возврата
+  
+  status        String   @default("pending") // pending, active, completed, cancelled
+  rentOrderId   String?  // ID заказа в Bajie
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  transactions  Transaction[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([rentOrderId])
+}
+
+model Transaction {
+  id            String   @id @default(cuid())
+  orderId       String?  // ID заказа аренды
+  rentalOrder   RentalOrder? @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  
+  transactionId String  @unique // ID транзакции в CloudPayments
+  accountId     String  // accountId пользователя (telegram_XXX или phone)
+  
+  amount        Int     // Сумма в копейках
+  currency      String  @default("RUB")
+  status        String  // authorized, completed, cancelled, refunded
+  description   String?
+  
+  cardToken     String? // Токен карты для списания
+  cardLastFour  String? // Последние 4 цифры карты
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([transactionId])
+  @@index([accountId])
+  @@index([orderId])
+  @@index([status])
+}

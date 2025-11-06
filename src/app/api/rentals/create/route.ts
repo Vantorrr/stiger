@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { BajieClient } from "@/lib/bajie";
 import { cloudPaymentsPublicId } from "@/lib/cloudpayments";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -38,8 +39,45 @@ export async function POST(req: NextRequest) {
     const selectedTariff = tariffs[tariffId as keyof typeof tariffs] || tariffs["1hour"];
     const totalAmount = selectedTariff.price + selectedTariff.deposit;
 
-    // Генерируем уникальный ID заказа
-    const orderId = `stiger-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    // Находим или создаем пользователя
+    // userId может быть telegram_XXX, phone или id пользователя
+    let user;
+    if (userId.startsWith("telegram_")) {
+      const telegramId = parseInt(userId.replace("telegram_", ""));
+      user = await prisma.user.upsert({
+        where: { telegramId },
+        update: {},
+        create: {
+          telegramId,
+          firstName: "User",
+        },
+      });
+    } else {
+      // Пытаемся найти по phone или создать нового
+      user = await prisma.user.upsert({
+        where: { phone: userId },
+        update: {},
+        create: {
+          phone: userId,
+          firstName: "User",
+        },
+      });
+    }
+
+    // Создаем заказ в БД
+    const rentalOrder = await prisma.rentalOrder.create({
+      data: {
+        userId: user.id,
+        deviceId,
+        shopId,
+        tariffId,
+        tariffPrice: selectedTariff.price * 100, // В копейках
+        depositAmount: selectedTariff.deposit * 100, // В копейках
+        status: "pending",
+      },
+    });
+
+    const orderId = rentalOrder.id;
 
     // Подготавливаем данные для CloudPayments
     const paymentData = {
@@ -78,11 +116,8 @@ export async function POST(req: NextRequest) {
       }
     };
     
-    // TODO: сохранить в Redis/DB с TTL
-    // Пока сохраняем в cookies для демо
+    // Сохраняем в cookies для обратной совместимости
     const response = NextResponse.json(orderData);
-    
-    // Добавляем заказ в куки для временного хранения
     response.cookies.set(`order_${orderId}`, JSON.stringify(orderData), {
       httpOnly: false,
       secure: process.env.NODE_ENV === "production",

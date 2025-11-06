@@ -196,3 +196,46 @@ export async function cpUnbindCard(accountId: string, token: string): Promise<{ 
   }
 }
 
+// Списание средств с привязанной карты по токену
+export async function cpChargeToken(params: {
+  token: string;
+  amount: number;
+  currency: string;
+  accountId: string;
+  invoiceId?: string;
+  description?: string;
+  jsonData?: Record<string, unknown>;
+}): Promise<{ ok: boolean; data?: Record<string, unknown>; status: number; error?: string }> {
+  try {
+    const res = await fetch(`${API_URL}/payments/tokens/charge`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...getBasicAuthHeader(),
+      },
+      body: JSON.stringify({
+        Token: params.token,
+        Amount: params.amount,
+        Currency: params.currency,
+        AccountId: params.accountId,
+        ...(params.invoiceId ? { InvoiceId: params.invoiceId } : {}),
+        ...(params.description ? { Description: params.description } : {}),
+        ...(params.jsonData ? { JsonData: params.jsonData } : {}),
+      }),
+    });
+
+    const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    const messageField = data as { Message?: unknown };
+    const lowerMessageField = data as { message?: unknown };
+    const errorMessage = typeof messageField.Message === "string"
+      ? messageField.Message
+      : typeof lowerMessageField.message === "string"
+        ? lowerMessageField.message
+        : undefined;
+
+    return { ok: res.ok, data, status: res.status, error: res.ok ? undefined : errorMessage };
+  } catch (e) {
+    return { ok: false, status: 500, error: e instanceof Error ? e.message : "charge token failed" };
+  }
+}
+
