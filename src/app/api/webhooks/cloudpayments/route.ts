@@ -8,6 +8,10 @@ type CloudPaymentsWebhookPayload = {
   Amount?: number;
   Description?: string;
   AccountId?: string;
+  CardId?: string;
+  CardLastFour?: string;
+  CardFirstSix?: string;
+  CardType?: string;
   Data?: Record<string, unknown> | string | null;
   [key: string]: unknown;
 };
@@ -99,9 +103,21 @@ export async function POST(req: NextRequest) {
       console.log(`[CP] Payment authorized for order ${InvoiceId}, amount: ${Amount}`);
       
       if (Amount === 1 && payload.Description?.includes("Привязка карты")) {
-        console.log(`[CP] Card binding authorized for account ${payload.AccountId}`);
-        console.log(`[CP] Card binding transaction: ${TransactionId}, AccountId: ${payload.AccountId}`);
-        console.log(`[CP] Card binding - CardId: ${payload.CardId}, CardLastFour: ${payload.CardLastFour}`);
+        const accountId = payload.AccountId || "";
+        const cardId = payload.CardId || "";
+        const cardLastFour = payload.CardLastFour || "";
+        const cardFirstSix = payload.CardFirstSix || "";
+        const cardType = payload.CardType || "";
+        
+        console.log(`[CP] ========== CARD BINDING EVENT ==========`);
+        console.log(`[CP] TransactionId: ${TransactionId}`);
+        console.log(`[CP] AccountId: ${accountId}`);
+        console.log(`[CP] CardId: ${cardId}`);
+        console.log(`[CP] CardLastFour: ${cardLastFour}`);
+        console.log(`[CP] CardFirstSix: ${cardFirstSix}`);
+        console.log(`[CP] CardType: ${cardType}`);
+        console.log(`[CP] Full payload:`, JSON.stringify(payload, null, 2));
+        console.log(`[CP] ========================================`);
         
         // Карта должна быть сохранена автоматически CloudPayments при saveCard: true
         // Проверяем через несколько секунд, что карта появилась
@@ -111,16 +127,21 @@ export async function POST(req: NextRequest) {
           setTimeout(async () => {
             try {
               const { cpListCards } = await import("@/lib/cloudpayments");
-              const accountId = payload.AccountId || "";
               const cardsResult = await cpListCards(accountId);
               const cardsCount = cardsResult.data?.Model?.length || 0;
               console.log(`[CP] Card binding check #${index + 1} (after ${delay}ms): accountId=${accountId}, cards found=${cardsCount}`);
               
               if (cardsCount > 0) {
-                console.log(`[CP] ✅ Card successfully saved! Cards:`, cardsResult.data?.Model);
+                console.log(`[CP] ✅ Card successfully saved! Cards:`, JSON.stringify(cardsResult.data?.Model, null, 2));
               } else if (index === checkDelays.length - 1) {
                 console.error(`[CP] ❌ Card NOT saved after ${checkDelays.length} attempts. AccountId: ${accountId}`);
+                console.error(`[CP] ❌ TransactionId: ${TransactionId}`);
+                console.error(`[CP] ❌ CardId from webhook: ${cardId}`);
                 console.error(`[CP] ❌ Check CloudPayments dashboard: https://merchant.cloudpayments.ru/`);
+                console.error(`[CP] ❌ Possible reasons:`);
+                console.error(`[CP] ❌ 1. saveCard: true not working - check CloudPayments settings`);
+                console.error(`[CP] ❌ 2. AccountId mismatch - check if accountId is the same in widget.auth() and cpListCards()`);
+                console.error(`[CP] ❌ 3. Card not saved in CloudPayments - check merchant dashboard`);
               }
             } catch (e) {
               console.error(`[CP] Failed to check cards after binding (attempt #${index + 1}):`, e);
