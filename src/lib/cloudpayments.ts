@@ -117,6 +117,15 @@ export async function cpListCards(accountId: string): Promise<{ ok: boolean; sta
       }),
     });
 
+    // Если у пользователя нет карт, CloudPayments может вернуть 404
+    if (res.status === 404) {
+      return {
+        ok: true,
+        status: 404,
+        data: { Success: true, Model: [] },
+      };
+    }
+
     const data = (await res.json().catch(() => ({}))) as { Success?: boolean; Model?: CloudPaymentsSavedCard[]; Message?: string; message?: string };
     const ok = res.ok && data?.Success !== false;
     const errorMessage = typeof data?.Message === "string" ? data.Message : typeof data?.message === "string" ? data.message : undefined;
