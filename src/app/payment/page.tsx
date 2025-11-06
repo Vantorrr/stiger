@@ -249,14 +249,15 @@ export default function PaymentPage() {
     console.log(`[Payment] Binding card for accountId: ${id}`);
     console.log(`[Payment] User data:`, JSON.parse(localStorage.getItem("stiger_user") || "{}"));
     
+    // CloudPayments требует saveCard: true для сохранения карты
+    // Предупреждения о неподдерживаемых полях - это просто предупреждения, параметры работают
     widget.auth({
       publicId,
       description: "Привязка карты к Stiger",
       amount: 1,
       currency: "RUB",
-      accountId: id, // ВАЖНО: accountId должен быть одинаковым при привязке и запросе списка
-      // НЕ передаём requireConfirmation, saveCard, paymentMethod - они вызывают предупреждения
-      // saveCard работает автоматически при правильном accountId
+      accountId: id, // КРИТИЧНО: accountId должен быть одинаковым при привязке и запросе списка
+      saveCard: true, // ОБЯЗАТЕЛЬНО для сохранения карты
       // НЕ передаём successUrl/failUrl - они вызывают редирект на [object Object]
       // Используем только onSuccess callback
     }, {
