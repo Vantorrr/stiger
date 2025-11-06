@@ -119,9 +119,16 @@ export async function cpListCards(accountId: string): Promise<{ ok: boolean; sta
 
     console.log(`[CP] cards/list status: ${res.status} for accountId: ${accountId}`);
 
-    // Если у пользователя нет карт, CloudPayments может вернуть 404
-    if (res.status === 404) {
-      console.log(`[CP] cards/list: 404 - no cards for accountId: ${accountId}, returning empty list`);
+    // Парсим ответ
+    const data = (await res.json().catch(() => ({}))) as { Success?: boolean; Model?: CloudPaymentsSavedCard[]; Message?: string; message?: string };
+    
+    // Проверяем, есть ли ошибка "404 - not found" в теле ответа
+    const errorMessage = typeof data?.Message === "string" ? data.Message : typeof data?.message === "string" ? data.message : undefined;
+    const is404Error = res.status === 404 || errorMessage?.includes("404") || errorMessage?.includes("not found");
+
+    // Если у пользователя нет карт, CloudPayments может вернуть 404 или ошибку "404 - not found"
+    if (is404Error) {
+      console.log(`[CP] cards/list: 404/not found - no cards for accountId: ${accountId}, returning empty list`);
       return {
         ok: true,
         status: 404,
@@ -129,9 +136,7 @@ export async function cpListCards(accountId: string): Promise<{ ok: boolean; sta
       };
     }
 
-    const data = (await res.json().catch(() => ({}))) as { Success?: boolean; Model?: CloudPaymentsSavedCard[]; Message?: string; message?: string };
     const ok = res.ok && data?.Success !== false;
-    const errorMessage = typeof data?.Message === "string" ? data.Message : typeof data?.message === "string" ? data.message : undefined;
 
     console.log(`[CP] cards/list: ok=${ok}, status=${res.status}, error=${errorMessage || "none"}`);
 
