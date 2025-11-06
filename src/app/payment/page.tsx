@@ -147,6 +147,7 @@ export default function PaymentPage() {
     setAccountId(id);
 
     if (id) {
+      // Всегда обновляем список карт при загрузке страницы
       fetchCards(id);
     } else {
       setLoadingCards(false);
@@ -169,6 +170,22 @@ export default function PaymentPage() {
     const interval = setInterval(checkRedirect, 100);
 
     return () => clearInterval(interval);
+  }, [fetchCards]);
+
+  // Обновляем список карт при изменении URL (например, после возврата с /payment/success)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('refresh') === 'true') {
+        // Убираем параметр из URL
+        window.history.replaceState({}, '', '/payment');
+        // Обновляем список карт
+        const id = resolveAccountId();
+        if (id) {
+          fetchCards(id);
+        }
+      }
+    }
   }, [fetchCards]);
 
   const deleteCard = useCallback(async (card: SavedCard) => {

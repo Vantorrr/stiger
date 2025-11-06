@@ -5,7 +5,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.cloudpayments.ru https://cloudpayments.ru; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://*.cloudpayments.ru https://cloudpayments.ru wss://*.cloudpayments.ru; frame-src 'self' https://*.cloudpayments.ru https://cloudpayments.ru https://stiger.app; frame-ancestors 'self' https://*.cloudpayments.ru"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.cloudpayments.ru https://*.tbank.ru; style-src 'self' 'unsafe-inline' https://*.cloudpayments.ru; img-src 'self' data: https: blob: https://*.cloudpayments.ru https://ads.cloudpayments.ru; font-src 'self' data: https://*.cloudpayments.ru; connect-src 'self' https://*.cloudpayments.ru wss://*.cloudpayments.ru https://secure2.tbank.ru https://api.cloudpayments.ru; frame-src 'self' https://*.cloudpayments.ru https://stiger.app https://secure2.tbank.ru; frame-ancestors 'self' https://*.cloudpayments.ru; child-src 'self' https://*.cloudpayments.ru"
         }
       ]
     }

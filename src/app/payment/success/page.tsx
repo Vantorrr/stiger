@@ -8,7 +8,8 @@ export default function PaymentSuccess() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      router.push("/payment");
+      // Используем window.location для полной перезагрузки страницы и обновления списка карт
+      window.location.href = "/payment?refresh=true";
     }, 2000);
 
     return () => clearTimeout(timer);
@@ -21,7 +22,7 @@ export default function PaymentSuccess() {
         <h1 className="text-3xl font-bold mb-2">Карта успешно привязана</h1>
         <p className="text-gray-600 mb-6">Через пару секунд вернёмся на страницу способов оплаты.</p>
         <button
-          onClick={() => router.push("/payment")}
+          onClick={() => window.location.href = "/payment?refresh=true"}
           className="px-6 py-3 rounded-xl gradient-bg text-white font-semibold"
         >
           К способам оплаты
