@@ -61,12 +61,15 @@ function resolveAccountId(): string | null {
     if (!userRaw) return null;
 
     const user = JSON.parse(userRaw);
-    return (
-      user?.id ||
-      user?.telegramId?.toString?.() ||
-      user?.phone ||
-      null
-    );
+    // Приоритет: id (telegram_XXX) > telegramId > phone
+    // Важно: accountId должен быть одинаковым везде для CloudPayments
+    const accountId = user?.id || 
+                     (user?.telegramId ? `telegram_${user.telegramId}` : null) ||
+                     user?.phone ||
+                     null;
+    
+    console.log(`[Payment] resolveAccountId: ${accountId}`, { user });
+    return accountId;
   } catch (e) {
     console.error("Failed to parse stiger_user", e);
     return null;
@@ -226,6 +229,8 @@ export default function PaymentPage() {
     const widget = new cp.CloudPayments();
     const origin = window.location.origin;
 
+    console.log(`[Payment] Binding card for accountId: ${id}`);
+    
     widget.auth({
       publicId,
       description: "Привязка карты к Stiger",
@@ -233,27 +238,79 @@ export default function PaymentPage() {
       currency: "RUB",
       requireConfirmation: false,
       saveCard: true,
-      accountId: id,
+      accountId: id, // Обязательно передаём accountId для привязки карты к пользователю
       paymentMethod: 'card',
       // НЕ передаём successUrl/failUrl - они вызывают редирект на [object Object]
       // Используем только onSuccess callback
     }, {
       onSuccess: async (options: CloudPaymentsSuccessPayload) => {
-        console.log("CloudPayments success", options);
+        console.log("[Payment] CloudPayments success", options);
+        console.log(`[Payment] TransactionId: ${options?.TransactionId || options?.transactionId}`);
+        console.log(`[Payment] AccountId used: ${id}`);
         setLoading(false);
 
-        // Редирект сразу, без alert и таймаута
-        // Виджет может закрыться и сделать свой редирект, поэтому делаем наш сразу
-        window.location.href = "/payment/success";
+        // CloudPayments сохраняет карту автоматически при saveCard: true
+        // Делаем несколько попыток проверки карт с увеличивающейся задержкой
+        let attempts = 0;
+        const maxAttempts = 6;
+        const delays = [2000, 3000, 4000, 5000, 6000, 7000]; // Увеличиваем задержку с каждой попыткой
 
-        // Остальные действия делаем в фоне (не ждём)
-        fetch("/api/cloudpayments/refund", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ transactionId: options?.TransactionId || options?.transactionId }),
-        }).catch(() => {});
+        const checkCardSaved = async (attempt: number) => {
+          if (attempt >= maxAttempts) {
+            console.log("[Payment] Max attempts reached, redirecting anyway");
+            window.location.href = "/payment/success";
+            return;
+          }
 
-        fetchCards(id).catch(() => {});
+          const delay = delays[attempt] || 3000;
+          console.log(`[Payment] Attempt ${attempt + 1}/${maxAttempts}, waiting ${delay}ms before checking cards`);
+          
+          setTimeout(async () => {
+            console.log(`[Payment] Fetching cards for accountId: ${id}`);
+            try {
+              // Проверяем карты напрямую через API
+              const res = await fetch("/api/cards/list", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ accountId: id }),
+              });
+
+              const data = (await res.json().catch(() => ({}))) as {
+                success?: boolean;
+                cards?: Array<{ LastFour?: string; Token?: string; Type?: string; PaymentSystem?: string }>;
+                error?: string;
+              };
+
+              const cardsCount = data?.cards?.length || 0;
+              console.log(`[Payment] Cards found: ${cardsCount}`, data);
+              
+              // Обновляем состояние
+              if (data?.success && data?.cards) {
+                setSavedCards(normalizeCards(data.cards));
+              }
+              
+              // Если карта появилась или это последняя попытка - редирект
+              if (cardsCount > 0 || attempt === maxAttempts - 1) {
+                console.log("[Payment] Card found or last attempt, redirecting to /payment/success");
+                window.location.href = "/payment/success";
+              } else {
+                // Продолжаем проверку
+                checkCardSaved(attempt + 1);
+              }
+            } catch (e) {
+              console.error("[Payment] Failed to fetch cards:", e);
+              // При ошибке продолжаем попытки
+              if (attempt < maxAttempts - 1) {
+                checkCardSaved(attempt + 1);
+              } else {
+                window.location.href = "/payment/success";
+              }
+            }
+          }, delay);
+        };
+
+        // Начинаем проверку
+        checkCardSaved(0);
       },
       onFail: (reason: string, data: unknown) => {
         console.error("CloudPayments fail", reason, data);
@@ -262,11 +319,7 @@ export default function PaymentPage() {
       },
       onComplete: () => {
         setLoading(false);
-        // Перехватываем редирект виджета и заменяем на наш
-        // Если виджет пытается сделать редирект, перехватываем его
-        if (window.location.pathname !== "/payment" && window.location.pathname !== "/payment/success") {
-          window.location.href = "/payment/success";
-        }
+        // Виджет закрыт, но редирект уже сделан в onSuccess
       }
     });
   }, [accountId, fetchCards, publicId, scriptLoaded]);

@@ -39,7 +39,6 @@ export default function Navbar() {
           {user ? (
             // Авторизованный пользователь
             <>
-              <Link href="/dashboard" className="hover:text-purple-600 transition-colors">ЛК</Link>
               <button 
                 onClick={handleLogout}
                 className="inline-flex items-center justify-center h-9 px-4 rounded-full bg-gradient-to-r from-red-500 to-pink-500 text-white font-semibold hover:shadow-lg transition-all duration-300"

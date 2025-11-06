@@ -167,7 +167,10 @@ export default function PaymentPage() {
       // setAccountId(id); // This line is removed
 
       if (id) {
-        fetchCards(id);
+        fetchCards(id).then(() => {
+          // После загрузки карт проверяем, есть ли привязанные карты
+          // Проверка будет в handlePayment, но можно показать предупреждение заранее
+        });
       } else {
         setSavedCardsLoading(false);
         setCardsError("Не удалось определить аккаунт для CloudPayments. Авторизуйся заново.");
@@ -220,6 +223,19 @@ export default function PaymentPage() {
       return;
     }
 
+    // Для карт: проверяем наличие привязанной карты
+    if (savedCards.length === 0 && !savedCardsLoading) {
+      const confirmBind = confirm(
+        "Для аренды power bank необходимо привязать карту. Перейти к привязке карты?"
+      );
+      if (confirmBind) {
+        router.push("/payment");
+        return;
+      } else {
+        return;
+      }
+    }
+
     // Для карт используем CloudPayments
     if (!scriptLoaded || !window.cp) {
       alert("Платежная система еще не загружена, попробуйте снова");
@@ -254,19 +270,34 @@ export default function PaymentPage() {
       onSuccess: (options: CloudPaymentsSuccessPayload) => {
         console.log("✅ Платеж успешен:", options);
         // Тригерим серверный confirm для выдачи (не ждем вебхук)
+        const accountId = resolveAccountId(user);
         fetch('/api/rentals/confirm', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             orderId: orderId,
-            transactionId: options.TransactionId || options.transactionId
+            transactionId: options.TransactionId || options.transactionId,
+            accountId: accountId
           })
-        }).then(() => {
+        }).then(async (res) => {
+          const data = await res.json();
+          if (!res.ok) {
+            // Если ошибка из-за отсутствия карты, редиректим на привязку
+            if (data.code === "NO_CARD") {
+              alert("Для аренды power bank необходимо привязать карту. Переходим к привязке...");
+              router.push("/payment");
+              return;
+            }
+            alert(data.error || "Ошибка подтверждения заказа");
+            setLoading(false);
+            return;
+          }
           setLoading(false);
           router.push(`/rental/success?orderId=${orderId}&transactionId=${options.TransactionId || options.transactionId || ''}`);
-        }).catch(() => {
+        }).catch((error) => {
+          console.error("Confirm error:", error);
           setLoading(false);
-          router.push(`/rental/success?orderId=${orderId}&transactionId=${options.TransactionId || options.transactionId || ''}`);
+          alert("Ошибка подтверждения заказа");
         });
       },
       onFail: (reason: string, data: unknown) => {

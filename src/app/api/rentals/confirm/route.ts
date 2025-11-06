@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { BajieClient } from "@/lib/bajie";
-import { cpConfirm, cpVoid } from "@/lib/cloudpayments";
+import { cpConfirm, cpVoid, cpListCards } from "@/lib/cloudpayments";
 import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { orderId, transactionId, deviceId, shopId, slotNum, skipPayment } = body;
+    const { orderId, transactionId, deviceId, shopId, slotNum, skipPayment, accountId } = body;
 
     if (!orderId || !transactionId) {
       return NextResponse.json({ error: "Missing orderId or transactionId" }, { status: 400 });
@@ -33,6 +33,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ 
         error: "Missing deviceId or shopId. Order may have expired." 
       }, { status: 400 });
+    }
+
+    // Проверяем наличие привязанной карты перед выдачей power bank
+    if (!skipPayment && accountId) {
+      const cardsResult = await cpListCards(accountId);
+      const hasCards = cardsResult.ok && cardsResult.data?.Model && cardsResult.data.Model.length > 0;
+      
+      if (!hasCards) {
+        console.log(`[Rental Confirm] No cards found for account ${accountId}, canceling payment`);
+        // Отменяем платеж, если карта не привязана
+        await cpVoid({ transactionId }).catch(() => {});
+        return NextResponse.json({ 
+          error: "Для аренды power bank необходимо привязать карту. Пожалуйста, привяжите карту и попробуйте снова.",
+          code: "NO_CARD"
+        }, { status: 400 });
+      }
     }
 
     // Проверяем авторизацию платежа и подтверждаем списание (если аккаунт двухстадийный)
