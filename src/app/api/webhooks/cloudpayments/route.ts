@@ -99,8 +99,10 @@ export async function POST(req: NextRequest) {
 
   switch (Status) {
     case "Authorized":
-      // Платеж авторизован (деньги заблокированы)
-      console.log(`[CP] Payment authorized for order ${InvoiceId}, amount: ${Amount}`);
+    case "Completed":
+      // Платеж авторизован (деньги заблокированы) или завершен (деньги списаны)
+      const statusText = Status === "Authorized" ? "authorized" : "completed";
+      console.log(`[CP] Payment ${statusText} for order ${InvoiceId}, amount: ${Amount}`);
       
       if (Amount === 1 && payload.Description?.includes("Привязка карты")) {
         const accountId = payload.AccountId || "";

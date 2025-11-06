@@ -43,6 +43,7 @@ interface CloudPaymentsAuthParams {
 
 interface CloudPaymentsWidget {
   auth(params: CloudPaymentsAuthParams, callbacks: CloudPaymentsWidgetCallbacks): void;
+  charge(params: CloudPaymentsAuthParams, callbacks: CloudPaymentsWidgetCallbacks): void;
 }
 
 interface CloudPaymentsNamespace {
@@ -253,8 +254,9 @@ export default function PaymentPage() {
     console.log(`[Payment] ========================================`);
     
     // CloudPayments требует saveCard: true для сохранения карты
-    // Предупреждения о неподдерживаемых полях - это просто предупреждения, параметры работают
-    widget.auth({
+    // Используем charge вместо auth, чтобы карта точно сохранилась
+    // При charge деньги списываются сразу, но для привязки это нормально (1 рубль)
+    widget.charge({
       publicId,
       description: "Привязка карты к Stiger",
       amount: 1,
