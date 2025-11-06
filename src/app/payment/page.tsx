@@ -254,9 +254,9 @@ export default function PaymentPage() {
     console.log(`[Payment] ========================================`);
     
     // CloudPayments требует saveCard: true для сохранения карты
-    // Используем charge вместо auth, чтобы карта точно сохранилась
-    // При charge деньги списываются сразу, но для привязки это нормально (1 рубль)
-    widget.charge({
+    // Используем auth (двухстадийная оплата) - это лучше работает с saveCard: true
+    // При auth деньги блокируются, но не списываются - для привязки карты это нормально
+    widget.auth({
       publicId,
       description: "Привязка карты к Stiger",
       amount: 1,

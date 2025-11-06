@@ -12,6 +12,7 @@ type CloudPaymentsWebhookPayload = {
   CardLastFour?: string;
   CardFirstSix?: string;
   CardType?: string;
+  Token?: string; // Токен карты из вебхука
   Data?: Record<string, unknown> | string | null;
   [key: string]: unknown;
 };
@@ -110,6 +111,7 @@ export async function POST(req: NextRequest) {
         const cardLastFour = payload.CardLastFour || "";
         const cardFirstSix = payload.CardFirstSix || "";
         const cardType = payload.CardType || "";
+        const token = payload.Token || ""; // Токен карты из вебхука
         
         console.log(`[CP] ========== CARD BINDING EVENT ==========`);
         console.log(`[CP] TransactionId: ${TransactionId}`);
@@ -118,8 +120,14 @@ export async function POST(req: NextRequest) {
         console.log(`[CP] CardLastFour: ${cardLastFour}`);
         console.log(`[CP] CardFirstSix: ${cardFirstSix}`);
         console.log(`[CP] CardType: ${cardType}`);
+        console.log(`[CP] Token: ${token}`);
+        console.log(`[CP] Status: ${Status}`);
         console.log(`[CP] Full payload:`, JSON.stringify(payload, null, 2));
         console.log(`[CP] ========================================`);
+        
+        // ВАЖНО: Если есть Token, но карта не сохранилась, это значит saveCard: true не сработал
+        // CloudPayments должен сохранить карту автоматически при saveCard: true
+        // Если карта не сохранилась, возможно проблема в настройках CloudPayments
         
         // Карта должна быть сохранена автоматически CloudPayments при saveCard: true
         // Проверяем через несколько секунд, что карта появилась
