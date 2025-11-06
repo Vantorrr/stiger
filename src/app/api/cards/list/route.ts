@@ -14,6 +14,14 @@ export async function POST(req: NextRequest) {
 
     const result = await cpListCards(accountId);
 
+    // Если 404 от CloudPayments - это нормально (нет карт), возвращаем пустой список
+    if (result.status === 404) {
+      return NextResponse.json({
+        success: true,
+        cards: [],
+      });
+    }
+
     if (!result.ok) {
       return NextResponse.json({ error: result.error || "CloudPayments cards list failed" }, { status: 502 });
     }
