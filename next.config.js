@@ -18,11 +18,6 @@ const nextConfig = {
         destination: '/payment/success',
         permanent: false,
       },
-      {
-        source: '/:path*%5Bobject%20Object%5D:path*',
-        destination: '/payment/success',
-        permanent: false,
-      },
     ];
   },
   async headers() {
