@@ -106,15 +106,24 @@ export async function cpVoid(params: { transactionId: string }): Promise<{ ok: b
 
 export async function cpListCards(accountId: string): Promise<{ ok: boolean; status: number; data?: { Success?: boolean; Model?: CloudPaymentsSavedCard[]; Message?: string; message?: string }; error?: string }> {
   try {
+    const requestBody = {
+      AccountId: accountId,
+    };
+    
+    console.log(`[CP] ========== CLOUDPAYMENTS CARDS/LIST ==========`);
+    console.log(`[CP] Request URL: ${API_URL}/cards/list`);
+    console.log(`[CP] Request body:`, JSON.stringify(requestBody, null, 2));
+    console.log(`[CP] accountId: ${accountId}`);
+    console.log(`[CP] accountId type: ${typeof accountId}`);
+    console.log(`[CP] ========================================`);
+    
     const res = await fetch(`${API_URL}/cards/list`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         ...getBasicAuthHeader(),
       },
-      body: JSON.stringify({
-        AccountId: accountId,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     console.log(`[CP] cards/list request: accountId=${accountId}`);

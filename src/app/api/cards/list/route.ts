@@ -6,17 +6,33 @@ export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
-    const { accountId } = await req.json();
+    const body = await req.json();
+    const { accountId } = body;
 
-    console.log(`[API] cards/list called with accountId: ${accountId}`);
+    console.log(`[API] ========== CARDS/LIST REQUEST ==========`);
+    console.log(`[API] Request body:`, JSON.stringify(body, null, 2));
+    console.log(`[API] accountId: ${accountId}`);
+    console.log(`[API] accountId type: ${typeof accountId}`);
+    console.log(`[API] accountId length: ${accountId?.length || 0}`);
+    console.log(`[API] ========================================`);
 
     if (!accountId) {
+      console.error(`[API] ❌ accountId is missing!`);
       return NextResponse.json({ error: "accountId is required" }, { status: 400 });
     }
 
     const result = await cpListCards(accountId);
 
-    console.log(`[API] cards/list result: ok=${result.ok}, status=${result.status}, error=${result.error || "none"}`);
+    console.log(`[API] ========== CARDS/LIST RESULT ==========`);
+    console.log(`[API] accountId used: ${accountId}`);
+    console.log(`[API] result.ok: ${result.ok}`);
+    console.log(`[API] result.status: ${result.status}`);
+    console.log(`[API] result.error: ${result.error || "none"}`);
+    console.log(`[API] cards count: ${result.data?.Model?.length || 0}`);
+    if (result.data?.Model && result.data.Model.length > 0) {
+      console.log(`[API] cards:`, JSON.stringify(result.data.Model, null, 2));
+    }
+    console.log(`[API] ========================================`);
 
     // Если 404 от CloudPayments - это нормально (нет карт), возвращаем пустой список
     // Проверяем и status, и ok, потому что cpListCards уже обрабатывает 404
