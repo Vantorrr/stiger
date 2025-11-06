@@ -246,8 +246,11 @@ export default function PaymentPage() {
     const widget = new cp.CloudPayments();
     const origin = window.location.origin;
 
-    console.log(`[Payment] Binding card for accountId: ${id}`);
+    console.log(`[Payment] ========== CARD BINDING START ==========`);
+    console.log(`[Payment] accountId: ${id}`);
     console.log(`[Payment] User data:`, JSON.parse(localStorage.getItem("stiger_user") || "{}"));
+    console.log(`[Payment] publicId: ${publicId}`);
+    console.log(`[Payment] ========================================`);
     
     // CloudPayments требует saveCard: true для сохранения карты
     // Предупреждения о неподдерживаемых полях - это просто предупреждения, параметры работают
@@ -257,7 +260,7 @@ export default function PaymentPage() {
       amount: 1,
       currency: "RUB",
       accountId: id, // КРИТИЧНО: accountId должен быть одинаковым при привязке и запросе списка
-      saveCard: true, // ОБЯЗАТЕЛЬНО для сохранения карты
+      saveCard: true, // ОБЯЗАТЕЛЬНО для сохранения карты (настройки CloudPayments: "Принудительно")
       // НЕ передаём successUrl/failUrl - они вызывают редирект на [object Object]
       // Используем только onSuccess callback
     }, {
@@ -284,14 +287,17 @@ export default function PaymentPage() {
           console.log(`[Payment] Attempt ${attempt + 1}/${maxAttempts}, waiting ${delay}ms before checking cards`);
           
           setTimeout(async () => {
-            console.log(`[Payment] Fetching cards for accountId: ${id}`);
-            try {
-              // Проверяем карты напрямую через API
-              const res = await fetch("/api/cards/list", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ accountId: id }),
-              });
+              console.log(`[Payment] ========== CHECKING CARDS ==========`);
+              console.log(`[Payment] Attempt ${attempt + 1}/${maxAttempts}, delay: ${delay}ms`);
+              console.log(`[Payment] Fetching cards for accountId: ${id}`);
+              console.log(`[Payment] ========================================`);
+              try {
+                // Проверяем карты напрямую через API
+                const res = await fetch("/api/cards/list", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ accountId: id }),
+                });
 
               const data = (await res.json().catch(() => ({}))) as {
                 success?: boolean;
@@ -300,9 +306,11 @@ export default function PaymentPage() {
               };
 
               const cardsCount = data?.cards?.length || 0;
-              console.log(`[Payment] Cards found: ${cardsCount}`, data);
+              console.log(`[Payment] ========== CARDS CHECK RESULT ==========`);
               console.log(`[Payment] AccountId used for check: ${id}`);
+              console.log(`[Payment] Cards found: ${cardsCount}`);
               console.log(`[Payment] Full API response:`, JSON.stringify(data, null, 2));
+              console.log(`[Payment] ========================================`);
               
               // Обновляем состояние
               if (data?.success && data?.cards) {
