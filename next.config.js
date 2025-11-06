@@ -6,6 +6,25 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  async redirects() {
+    return [
+      {
+        source: '/%5Bobject%20Object%5D',
+        destination: '/payment/success',
+        permanent: false,
+      },
+      {
+        source: '/[object Object]',
+        destination: '/payment/success',
+        permanent: false,
+      },
+      {
+        source: '/:path*%5Bobject%20Object%5D:path*',
+        destination: '/payment/success',
+        permanent: false,
+      },
+    ];
+  },
   async headers() {
     return [
       {
