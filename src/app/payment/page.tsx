@@ -97,6 +97,18 @@ export default function PaymentPage() {
   const [cardsError, setCardsError] = useState<string | null>(null);
   const publicId = (process.env.NEXT_PUBLIC_CLOUDPAYMENTS_PUBLIC_ID as string) || "";
 
+  // Перехватываем редирект на [object Object] ДО рендера
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const path = window.location.pathname;
+    if (path.includes('[object') || path.includes('%5Bobject') || path === '/[object Object]' || path === '/%5Bobject%20Object%5D') {
+      console.log('[Payment] Early intercept: redirecting from [object Object] to /payment/success');
+      window.location.replace('/payment/success');
+      return;
+    }
+  }, []);
+
   const fetchCards = useCallback(async (id: string) => {
     setLoadingCards(true);
     setCardsError(null);
@@ -137,6 +149,23 @@ export default function PaymentPage() {
       setLoadingCards(false);
       setCardsError("Не удалось определить пользователя. Залогинься заново.");
     }
+
+    // Перехватываем редирект на [object Object] или другие несуществующие пути
+    const checkRedirect = () => {
+      const path = window.location.pathname;
+      if (path.includes('[object') || path.includes('%5Bobject') || path === '/[object Object]' || path === '/%5Bobject%20Object%5D') {
+        console.log('[Payment] Intercepted redirect to [object Object], redirecting to /payment/success');
+        window.location.replace('/payment/success');
+      }
+    };
+
+    // Проверяем сразу
+    checkRedirect();
+
+    // Проверяем при изменении URL
+    const interval = setInterval(checkRedirect, 100);
+
+    return () => clearInterval(interval);
   }, [fetchCards]);
 
   const deleteCard = useCallback(async (card: SavedCard) => {
