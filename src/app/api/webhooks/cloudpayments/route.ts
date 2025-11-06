@@ -70,23 +70,42 @@ export async function POST(req: NextRequest) {
   switch (Status) {
     case "Authorized":
       // Платеж авторизован (деньги заблокированы)
-      // Здесь можно сразу инициировать выдачу powerbank
       console.log(`[CP] Payment authorized for order ${InvoiceId}, amount: ${Amount}`);
       
-      try {
-        await fetch(`${process.env.APP_URL}/api/rentals/confirm`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            orderId: InvoiceId,
-            transactionId: TransactionId,
-            deviceId: Data?.deviceId,
-            shopId: Data?.shopId,
-            slotNum: Data?.slotNum
-          })
-        });
-      } catch (e) {
-        console.error("Confirm via webhook failed", e);
+      // Если это привязка карты (amount = 1), сохраняем её через API
+      if (Amount === 1 && payload.Description?.includes("Привязка карты")) {
+        try {
+          await fetch(`${process.env.APP_URL}/api/cards/save`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              accountId: payload.AccountId,
+              cardLastFour: payload.CardLastFour,
+              cardType: payload.CardType,
+              token: payload.Token,
+              transactionId: TransactionId
+            })
+          });
+        } catch (e) {
+          console.error("Card save via webhook failed", e);
+        }
+      } else {
+        // Это аренда — подтверждаем и выдаём
+        try {
+          await fetch(`${process.env.APP_URL}/api/rentals/confirm`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              orderId: InvoiceId,
+              transactionId: TransactionId,
+              deviceId: Data?.deviceId,
+              shopId: Data?.shopId,
+              slotNum: Data?.slotNum
+            })
+          });
+        } catch (e) {
+          console.error("Confirm via webhook failed", e);
+        }
       }
       
       break;
