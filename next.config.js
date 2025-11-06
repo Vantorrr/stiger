@@ -38,7 +38,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' https://*.cloudpayments.ru",
               "img-src 'self' data: https: blob: https://*.cloudpayments.ru https://ads.cloudpayments.ru",
               "font-src 'self' data: https://*.cloudpayments.ru",
-              "connect-src 'self' https://*.cloudpayments.ru wss://*.cloudpayments.ru https://secure2.tbank.ru https://api.cloudpayments.ru",
+              "connect-src 'self' https://*.cloudpayments.ru wss://*.cloudpayments.ru https://secure2.tbank.ru https://api.cloudpayments.ru https://intent-api.cloudpayments.ru",
               "frame-src 'self' https://*.cloudpayments.ru https://stiger.app https://secure2.tbank.ru",
               "frame-ancestors 'self' https://*.cloudpayments.ru",
               "child-src 'self' https://*.cloudpayments.ru"

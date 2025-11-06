@@ -254,10 +254,9 @@ export default function PaymentPage() {
       description: "Привязка карты к Stiger",
       amount: 1,
       currency: "RUB",
-      requireConfirmation: false,
-      saveCard: true, // ВАЖНО: это сохраняет карту в CloudPayments
       accountId: id, // ВАЖНО: accountId должен быть одинаковым при привязке и запросе списка
-      paymentMethod: 'card',
+      // НЕ передаём requireConfirmation, saveCard, paymentMethod - они вызывают предупреждения
+      // saveCard работает автоматически при правильном accountId
       // НЕ передаём successUrl/failUrl - они вызывают редирект на [object Object]
       // Используем только onSuccess callback
     }, {
