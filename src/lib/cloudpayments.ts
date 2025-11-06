@@ -132,9 +132,20 @@ export async function cpListCards(accountId: string): Promise<{ ok: boolean; sta
     // Парсим ответ
     const data = (await res.json().catch(() => ({}))) as { Success?: boolean; Model?: CloudPaymentsSavedCard[]; Message?: string; message?: string };
     
+    console.log(`[CP] cards/list response body:`, JSON.stringify(data, null, 2));
+    
     // Проверяем, есть ли ошибка "404 - not found" в теле ответа
     const errorMessage = typeof data?.Message === "string" ? data.Message : typeof data?.message === "string" ? data.message : undefined;
     const is404Error = res.status === 404 || errorMessage?.includes("404") || errorMessage?.includes("not found");
+    
+    if (is404Error) {
+      console.error(`[CP] ❌ CloudPayments returned 404/not found for accountId: ${accountId}`);
+      console.error(`[CP] ❌ This means NO CARDS are saved for this accountId in CloudPayments`);
+      console.error(`[CP] ❌ Possible reasons:`);
+      console.error(`[CP] ❌ 1. Card was not saved during binding (saveCard: true didn't work)`);
+      console.error(`[CP] ❌ 2. AccountId mismatch - card was saved with different accountId`);
+      console.error(`[CP] ❌ 3. CloudPayments settings issue - check merchant dashboard`);
+    }
 
     // Если у пользователя нет карт, CloudPayments может вернуть 404 или ошибку "404 - not found"
     if (is404Error) {
