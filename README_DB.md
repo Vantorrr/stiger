@@ -55,3 +55,4 @@ npx prisma migrate deploy
 - `npx prisma migrate deploy` - применить миграции в продакшене
 - `npx prisma generate` - сгенерировать Prisma Client
 
+

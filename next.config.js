@@ -34,12 +34,12 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.cloudpayments.ru https://*.tbank.ru",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.cloudpayments.ru https://*.tbank.ru https://telegram.org",
               "style-src 'self' 'unsafe-inline' https://*.cloudpayments.ru",
               "img-src 'self' data: https: blob: https://*.cloudpayments.ru https://ads.cloudpayments.ru",
               "font-src 'self' data: https://*.cloudpayments.ru",
               "connect-src 'self' https://*.cloudpayments.ru wss://*.cloudpayments.ru https://secure2.tbank.ru https://api.cloudpayments.ru https://intent-api.cloudpayments.ru",
-              "frame-src 'self' https://*.cloudpayments.ru https://stiger.app https://secure2.tbank.ru",
+              "frame-src 'self' https://*.cloudpayments.ru https://stiger.app https://secure2.tbank.ru https://oauth.telegram.org",
               "frame-ancestors 'self' https://*.cloudpayments.ru",
               "child-src 'self' https://*.cloudpayments.ru"
             ].join('; ')
