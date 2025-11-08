@@ -79,6 +79,29 @@ export default function TelegramWidgetPage() {
           </div>
         ) : null}
 
+        {/* Крупная заметная кнопка как у обычного сервиса */}
+        {botUsername ? (
+          <div className="mb-6">
+            <button
+              onClick={() => {
+                try {
+                  // Пытаемся открыть приложение Telegram
+                  window.location.href = `tg://resolve?domain=${botUsername}`;
+                  // Фолбэк в веб, если схема не поддерживается
+                  setTimeout(() => {
+                    window.location.href = `https://t.me/${botUsername}`;
+                  }, 300);
+                } catch {
+                  window.location.href = `https://t.me/${botUsername}`;
+                }
+              }}
+              className="w-full h-12 rounded-2xl bg-white text-purple-900 font-bold text-lg hover:bg-white/90 transition-all"
+            >
+              Войти через Telegram
+            </button>
+          </div>
+        ) : null}
+
         {/* Telegram Login Widget */}
         <div className="mb-6" id="tg-login-container">
           {/* Кнопка появится здесь после загрузки скрипта */}
