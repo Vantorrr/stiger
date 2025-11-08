@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo } from "react";
 import Link from "next/link";
+import Script from "next/script";
 
 declare global {
   interface Window {
@@ -16,6 +17,28 @@ export default function TelegramWidgetPage() {
   }, []);
 
   useEffect(() => {
+    // Грузим виджет программно — гарантируем появление кнопки
+    const mountWidget = () => {
+      try {
+        const existing = document.getElementById("tg-login-script");
+        if (existing) existing.remove();
+        const script = document.createElement("script");
+        script.id = "tg-login-script";
+        script.async = true;
+        script.src = "https://telegram.org/js/telegram-widget.js?22";
+        script.setAttribute("data-telegram-login", botUsername || "set_bot_username");
+        script.setAttribute("data-size", "large");
+        script.setAttribute("data-userpic", "false");
+        script.setAttribute("data-request-access", "write");
+        script.setAttribute("data-lang", "ru");
+        script.setAttribute("data-onauth", "onTelegramAuth(user)");
+        const container = document.getElementById("tg-login-container");
+        (container || document.body).appendChild(script);
+      } catch (e) {
+        console.error("Failed to mount Telegram widget:", e);
+      }
+    };
+
     // Глобальный callback для Telegram Login Widget
     window.onTelegramAuth = (user: any) => {
       try {
@@ -38,6 +61,7 @@ export default function TelegramWidgetPage() {
         alert("Ошибка авторизации через Telegram");
       }
     };
+    mountWidget();
   }, []);
 
   return (
@@ -56,24 +80,24 @@ export default function TelegramWidgetPage() {
         ) : null}
 
         {/* Telegram Login Widget */}
-        <div className="mb-6">
-          {/* eslint-disable-next-line @next/next/no-script-in-document */}
-          <script
-            async
-            src="https://telegram.org/js/telegram-widget.js?22"
-            data-telegram-login={botUsername || "set_bot_username"}
-            data-size="large"
-            data-userpic="false"
-            data-request-access="write"
-            data-lang="ru"
-            data-onauth="onTelegramAuth(user)"
-          />
+        <div className="mb-6" id="tg-login-container">
+          {/* Кнопка появится здесь после загрузки скрипта */}
         </div>
 
         <div className="text-white/60 text-sm space-y-3">
           <p>Если кнопка не работает, откройте Telegram и найдите нашего бота:</p>
           <p className="font-mono text-white">
             @{botUsername || "set_bot_username"}
+          </p>
+          <p>
+            <a
+              className="underline"
+              href={botUsername ? `https://t.me/${botUsername}` : "https://t.me/"}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Открыть бота в Telegram
+            </a>
           </p>
           <p>
             После входа вы будете перенаправлены автоматически.{" "}
